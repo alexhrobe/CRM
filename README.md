@@ -2,6 +2,12 @@
 
 Sistema de gestão de cotações e pedidos de exportação da PLP Brasil.
 
+> **📐 Arquitetura:** ver [ARCHITECTURE.md](ARCHITECTURE.md) (diagramas) e os
+> [ADRs](docs/adr/) (decisões registradas).
+>
+> **✅ Qualidade:** type-safety ponta a ponta contra o schema, lint sem
+> warnings, testes (Vitest) e CI em cada push — `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
+
 ## Stack
 
 - **Frontend**: React 18 + Vite + TypeScript + Tailwind CSS
