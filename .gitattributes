@@ -1,0 +1,14 @@
+# Normalize line endings to LF in the repo (consistent across Win/Mac/Linux CI)
+* text=auto eol=lf
+
+# Explicit binaries (never normalize)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Lockfiles: keep as-is, mark generated for cleaner diffs
+pnpm-lock.yaml linguist-generated=true -diff
