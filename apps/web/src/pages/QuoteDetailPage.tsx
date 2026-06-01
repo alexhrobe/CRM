@@ -53,6 +53,7 @@ export function QuoteDetailPage() {
   }
 
   async function handleConvert() {
+    if (!quote) return
     const order = await createOrder.mutateAsync({
       account_id: quote.account_id,
       quote_id: id!,
@@ -116,7 +117,7 @@ export function QuoteDetailPage() {
         <div className="flex-1 flex flex-col p-6 gap-6 min-w-0">
           {editing ? (
             <QuoteForm
-              initial={{ id, ...quote }}
+              initial={{ ...quote, id }}
               onSuccess={() => setEditing(false)}
               onCancel={() => setEditing(false)}
             />

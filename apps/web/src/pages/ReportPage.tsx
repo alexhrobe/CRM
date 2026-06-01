@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
+import type { ReportKpis } from '@crm-plp/shared'
 
 export function ReportListPage() {
   const navigate = useNavigate()
@@ -156,7 +157,9 @@ export function ReportDetailPage() {
   if (isLoading) return <div className="flex items-center justify-center h-full text-gray-400">Carregando...</div>
   if (!report) return <div className="flex items-center justify-center h-full text-gray-400">Relatório não encontrado</div>
 
-  const kpis = report.snapshots?.find((s: any) => s.metric_key === 'kpis')?.payload
+  const kpis = report.snapshots?.find((s) => s.metric_key === 'kpis')?.payload as
+    | ReportKpis
+    | undefined
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">

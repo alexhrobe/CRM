@@ -346,3 +346,14 @@ export interface MonthlyKpi {
   total_quoted_usd: number
   total_ordered_usd: number
 }
+
+// ─── Report snapshot payloads ─────────────────────────────────────────────────
+// Contrato dos JSONBs gravados em report_snapshots pela Edge Function close-month.
+
+export interface ReportKpis {
+  quotes_received: number
+  quotes_sent: number
+  orders_received: number
+  total_quoted_usd: number
+  total_ordered_usd: number
+}

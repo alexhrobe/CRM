@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { CreateQuote, PipelineQuote } from '@crm-plp/shared'
+import type { CreateQuote, PipelineQuote, QuoteStage } from '@crm-plp/shared'
 
 export function usePipelineQuotes() {
   return useQuery({
@@ -104,7 +104,7 @@ export function useUpdateQuoteStage() {
     mutationFn: async ({ id, stage, ...extra }: { id: string; stage: string; [k: string]: unknown }) => {
       const { data, error } = await supabase
         .from('quotes')
-        .update({ stage, decided_at: ['won','lost'].includes(stage) ? new Date().toISOString() : null, ...extra })
+        .update({ stage: stage as QuoteStage, decided_at: ['won','lost'].includes(stage) ? new Date().toISOString() : null, ...extra })
         .eq('id', id)
         .select()
         .single()

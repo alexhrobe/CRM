@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { WorldMap } from '@/components/WorldMap'
-import type { CountryMetrics } from '@crm-plp/shared'
+import type { CountryMetrics, ReportKpis } from '@crm-plp/shared'
 
 export function PublicReportPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -39,9 +39,13 @@ export function PublicReportPage() {
     )
   }
 
-  const kpis = report.snapshots?.find((s: any) => s.metric_key === 'kpis')?.payload
-  const byCountry: Record<string, any> = report.snapshots?.find((s: any) => s.metric_key === 'by_country')?.payload ?? {}
-  const topWon = report.snapshots?.find((s: any) => s.metric_key === 'top_quotes_won')?.payload ?? []
+  const kpis = report.snapshots?.find((s) => s.metric_key === 'kpis')?.payload as
+    | ReportKpis
+    | undefined
+  const byCountry = (report.snapshots?.find((s) => s.metric_key === 'by_country')?.payload ??
+    {}) as Record<string, any>
+  const topWon = (report.snapshots?.find((s) => s.metric_key === 'top_quotes_won')?.payload ??
+    []) as any[]
 
   // Transform by_country into CountryMetrics shape for WorldMap
   const countryMetrics: CountryMetrics[] = Object.entries(byCountry).map(([iso2, d]: [string, any]) => ({
