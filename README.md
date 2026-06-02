@@ -7,6 +7,9 @@ Sistema de gestão de cotações e pedidos de exportação da PLP Brasil.
 >
 > **✅ Qualidade:** type-safety ponta a ponta contra o schema, lint sem
 > warnings, testes (Vitest) e CI em cada push — `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
+>
+> **🔒 Segurança:** modelo de ameaça, RLS por papel e auditoria em
+> [SECURITY.md](SECURITY.md).
 
 ## Stack
 
