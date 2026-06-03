@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuote, useUpdateQuoteStage } from '@/hooks/useQuotes'
+import { useQuote, useUpdateQuoteStage, useDeleteQuote } from '@/hooks/useQuotes'
 import { useCreateOrder } from '@/hooks/useOrders'
 import { ActivityTimeline } from '@/components/ActivityTimeline'
 import { StageBadge } from '@/components/StageBadge'
@@ -22,6 +22,7 @@ export function QuoteDetailPage() {
   const navigate = useNavigate()
   const { data: quote, isLoading } = useQuote(id!)
   const updateStage = useUpdateQuoteStage()
+  const deleteQuote = useDeleteQuote()
   const createOrder = useCreateOrder()
   const [editing, setEditing] = useState(false)
   const [showLossForm, setShowLossForm] = useState(false)
@@ -107,6 +108,12 @@ export function QuoteDetailPage() {
             )}
             <button onClick={() => setEditing(e => !e)} className="btn-secondary text-xs">
               {editing ? 'Cancelar' : 'Editar'}
+            </button>
+            <button
+              onClick={() => { if (quote && confirm(`Excluir a cotação ${quote.quote_number}? Esta ação não pode ser desfeita.`)) deleteQuote.mutate(quote.id, { onSuccess: () => navigate('/') }) }}
+              className="btn-danger text-xs"
+            >
+              Excluir
             </button>
           </div>
         </div>

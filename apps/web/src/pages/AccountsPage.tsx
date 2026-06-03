@@ -1,43 +1,32 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useAccounts, useAccount, useCreateAccount } from '@/hooks/useAccounts'
+import { useAccounts, useAccount, useDeleteAccount } from '@/hooks/useAccounts'
+import { useDeleteContact } from '@/hooks/useContacts'
+import { AccountForm, ACCOUNT_TYPE_LABELS } from '@/components/AccountForm'
+import { ContactForm, type ContactRecord } from '@/components/ContactForm'
 import { CountryBadge } from '@/components/CountryBadge'
 import { StageBadge } from '@/components/StageBadge'
 import { ActivityTimeline } from '@/components/ActivityTimeline'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Account } from '@crm-plp/shared'
 
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  direct_customer: 'Cliente Direto',
-  subsidiary: 'Subsidiária',
-  distributor: 'Distribuidor',
-  representative: 'Representante',
-  partner: 'Parceiro',
-}
-
 export function AccountsListPage() {
   const navigate = useNavigate()
   const { data: accounts = [], isLoading } = useAccounts()
-  const create = useCreateAccount()
+  const del = useDeleteAccount()
   const [search, setSearch] = useState('')
+  const [formAccount, setFormAccount] = useState<Partial<Account> & { id?: string } | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({
-    legal_name: '', country: '', country_iso2: '',
-    account_type: 'direct_customer' as Account['account_type'],
-    currency_default: 'USD', segment: '', notes: '',
-    parent_account_id: null as string | null,
-  })
 
-  const filtered = accounts.filter(a =>
-    !search || a.legal_name.toLowerCase().includes(search.toLowerCase()) ||
-    a.country.toLowerCase().includes(search.toLowerCase())
+  const filtered = accounts.filter(
+    (a) =>
+      !search ||
+      a.legal_name.toLowerCase().includes(search.toLowerCase()) ||
+      a.country.toLowerCase().includes(search.toLowerCase()),
   )
 
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault()
-    const result = await create.mutateAsync(form)
-    setShowForm(false)
-    navigate(`/contas/${result.id}`)
+  function remove(a: Account) {
+    if (confirm(`Excluir a conta "${a.legal_name}"? Esta ação não pode ser desfeita.`)) del.mutate(a.id)
   }
 
   return (
@@ -45,58 +34,17 @@ export function AccountsListPage() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800">
         <h1 className="text-sm font-semibold">Contas ({accounts.length})</h1>
         <div className="flex gap-2">
-          <input
-            placeholder="Buscar..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="input w-48 text-xs"
-          />
-          <button onClick={() => setShowForm(true)} className="btn-primary text-xs">+ Nova</button>
+          <input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="input w-48 text-xs" />
+          <button onClick={() => { setFormAccount(null); setShowForm(true) }} className="btn-primary text-xs">+ Nova</button>
         </div>
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="card w-full max-w-lg p-5 shadow-xl animate-fade-in">
-            <h2 className="font-semibold mb-4">Nova Conta</h2>
-            <form onSubmit={handleCreate} className="flex flex-col gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <label className="label">Razão Social *</label>
-                  <input required value={form.legal_name} onChange={e => setForm(f => ({ ...f, legal_name: e.target.value }))} className="input" />
-                </div>
-                <div>
-                  <label className="label">País *</label>
-                  <input required value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} className="input" placeholder="Argentina" />
-                </div>
-                <div>
-                  <label className="label">ISO2</label>
-                  <input maxLength={2} value={form.country_iso2} onChange={e => setForm(f => ({ ...f, country_iso2: e.target.value.toUpperCase() }))} className="input" placeholder="AR" />
-                </div>
-                <div>
-                  <label className="label">Tipo</label>
-                  <select value={form.account_type} onChange={e => setForm(f => ({ ...f, account_type: e.target.value as any }))} className="input">
-                    {Object.entries(ACCOUNT_TYPE_LABELS).map(([k,v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Moeda padrão</label>
-                  <select value={form.currency_default} onChange={e => setForm(f => ({ ...f, currency_default: e.target.value }))} className="input">
-                    {['USD','EUR','ARS','CLP','COP','PEN','PYG'].map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label className="label">Segmento</label>
-                  <input value={form.segment} onChange={e => setForm(f => ({ ...f, segment: e.target.value }))} className="input" />
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end pt-2">
-                <button type="button" onClick={() => setShowForm(false)} className="btn-ghost">Cancelar</button>
-                <button type="submit" disabled={create.isPending} className="btn-primary">Criar</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <AccountForm
+          initial={formAccount ?? undefined}
+          onClose={() => setShowForm(false)}
+          onSaved={(id) => { if (!formAccount) navigate(`/contas/${id}`) }}
+        />
       )}
 
       <div className="flex-1 overflow-y-auto">
@@ -106,19 +54,23 @@ export function AccountsListPage() {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
               <tr>
-                {['Conta','País','Tipo','Moeda','Segmento'].map(h => (
+                {['Conta', 'País', 'Tipo', 'Moeda', 'Segmento', ''].map((h) => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(a => (
-                <tr key={a.id} onClick={() => navigate(`/contas/${a.id}`)} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer">
+              {filtered.map((a) => (
+                <tr key={a.id} onClick={() => navigate(`/contas/${a.id}`)} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 cursor-pointer group">
                   <td className="px-4 py-2.5 font-medium">{a.legal_name}</td>
                   <td className="px-4 py-2.5"><CountryBadge iso2={a.country_iso2} country={a.country} /></td>
                   <td className="px-4 py-2.5 text-xs text-gray-500">{ACCOUNT_TYPE_LABELS[a.account_type]}</td>
                   <td className="px-4 py-2.5 text-xs text-gray-500">{a.currency_default}</td>
                   <td className="px-4 py-2.5 text-xs text-gray-500">{a.segment ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                    <button onClick={(e) => { e.stopPropagation(); setFormAccount(a); setShowForm(true) }} className="text-xs text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-1.5" title="Editar">✏️</button>
+                    <button onClick={(e) => { e.stopPropagation(); remove(a) }} className="text-xs text-gray-400 hover:text-red-600 px-1.5" title="Excluir">🗑️</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -133,10 +85,21 @@ export function AccountDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { data: account, isLoading } = useAccount(id!)
+  const del = useDeleteAccount()
+  const delContact = useDeleteContact()
   const [tab, setTab] = useState<'quotes' | 'orders' | 'activity'>('quotes')
+  const [editing, setEditing] = useState(false)
+  const [contactForm, setContactForm] = useState<ContactRecord | null | undefined>(undefined) // undefined=closed, null=new, record=edit
 
   if (isLoading) return <div className="flex items-center justify-center h-full text-gray-400">Carregando...</div>
   if (!account) return <div className="flex items-center justify-center h-full text-gray-400">Conta não encontrada</div>
+
+  function removeAccount() {
+    if (!account) return
+    if (confirm(`Excluir a conta "${account.legal_name}" e seus vínculos? Esta ação não pode ser desfeita.`)) {
+      del.mutate(account.id, { onSuccess: () => navigate('/contas') })
+    }
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
@@ -151,37 +114,41 @@ export function AccountDetailPage() {
               {account.segment && <span className="text-xs text-gray-400">{account.segment}</span>}
             </div>
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => setEditing(true)} className="btn-secondary text-xs">Editar</button>
+            <button onClick={removeAccount} className="btn-danger text-xs">Excluir</button>
+          </div>
         </div>
       </div>
 
+      {editing && <AccountForm initial={account} onClose={() => setEditing(false)} />}
+      {contactForm !== undefined && <ContactForm initial={contactForm ?? undefined} fixedAccountId={contactForm ? undefined : account.id} onClose={() => setContactForm(undefined)} />}
+
       {/* Contacts */}
-      {account.contacts && account.contacts.length > 0 && (
-        <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800">
-          <h3 className="text-xs font-semibold text-gray-500 mb-2">CONTATOS</h3>
-          <div className="flex gap-4 flex-wrap">
-            {account.contacts.map((c: any) => (
-              <div key={c.id} className="text-sm">
-                <span className="font-medium">{c.name}</span>
-                {c.role && <span className="text-gray-500 text-xs ml-1">· {c.role}</span>}
-                {c.email && <span className="text-gray-400 text-xs ml-2">{c.email}</span>}
-              </div>
-            ))}
-          </div>
+      <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-semibold text-gray-500">CONTATOS</h3>
+          <button onClick={() => setContactForm(null)} className="text-xs text-brand-600 dark:text-brand-400 hover:underline">+ Adicionar</button>
         </div>
-      )}
+        <div className="flex flex-col gap-1">
+          {(account.contacts ?? []).map((c: any) => (
+            <div key={c.id} className="flex items-center gap-2 text-sm group">
+              <span className="font-medium">{c.name}</span>
+              {c.role && <span className="text-gray-500 text-xs">· {c.role}</span>}
+              {c.email && <span className="text-gray-400 text-xs">{c.email}</span>}
+              {c.phone && <span className="text-gray-400 text-xs">{c.phone}</span>}
+              <button onClick={() => setContactForm(c)} className="text-xs text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 ml-1" title="Editar">✏️</button>
+              <button onClick={() => { if (confirm(`Excluir o contato "${c.name}"?`)) delContact.mutate(c.id) }} className="text-xs text-gray-400 hover:text-red-600" title="Excluir">🗑️</button>
+            </div>
+          ))}
+          {(!account.contacts || account.contacts.length === 0) && <p className="text-xs text-gray-400">Nenhum contato.</p>}
+        </div>
+      </div>
 
       {/* Tab nav */}
       <div className="flex gap-0 border-b border-gray-200 dark:border-gray-800 px-6">
-        {(['quotes','orders','activity'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
-                : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-100'
-            }`}
-          >
+        {(['quotes', 'orders', 'activity'] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 hover:text-gray-900 dark:hover:text-gray-100'}`}>
             {{ quotes: `Cotações (${account.quotes?.length ?? 0})`, orders: `Pedidos (${account.orders?.length ?? 0})`, activity: 'Atividades' }[t]}
           </button>
         ))}
@@ -200,9 +167,7 @@ export function AccountDetailPage() {
                 <StageBadge stage={q.stage} size="xs" />
               </div>
             ))}
-            {(!account.quotes || account.quotes.length === 0) && (
-              <p className="text-sm text-gray-400 text-center py-8">Nenhuma cotação</p>
-            )}
+            {(!account.quotes || account.quotes.length === 0) && <p className="text-sm text-gray-400 text-center py-8">Nenhuma cotação</p>}
           </div>
         )}
 
@@ -211,22 +176,18 @@ export function AccountDetailPage() {
             {(account.orders ?? []).map((o: any) => (
               <div key={o.id} onClick={() => navigate(`/pedidos/${o.id}`)} className="card p-3 cursor-pointer hover:border-brand-400 flex items-center gap-3">
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{o.po_number ?? o.internal_number ?? o.id.slice(0,8)}</p>
+                  <p className="text-sm font-medium">{o.po_number ?? o.internal_number ?? o.id.slice(0, 8)}</p>
                   <p className="text-xs text-gray-500">{formatDate(o.received_at)}</p>
                 </div>
                 <span className="text-sm font-semibold">{formatCurrency(o.total_value, o.currency)}</span>
                 <span className="text-xs text-gray-500">{o.status}</span>
               </div>
             ))}
-            {(!account.orders || account.orders.length === 0) && (
-              <p className="text-sm text-gray-400 text-center py-8">Nenhum pedido</p>
-            )}
+            {(!account.orders || account.orders.length === 0) && <p className="text-sm text-gray-400 text-center py-8">Nenhum pedido</p>}
           </div>
         )}
 
-        {tab === 'activity' && (
-          <ActivityTimeline accountId={id} />
-        )}
+        {tab === 'activity' && <ActivityTimeline accountId={id} />}
       </div>
     </div>
   )

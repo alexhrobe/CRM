@@ -1,5 +1,6 @@
+import { useState, type FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useOrder, useUpdateOrder } from '@/hooks/useOrders'
+import { useOrder, useUpdateOrder, useDeleteOrder } from '@/hooks/useOrders'
 import { ActivityTimeline } from '@/components/ActivityTimeline'
 import { formatCurrency, formatDate, formatBRL } from '@/lib/utils'
 import type { OrderStatus } from '@crm-plp/shared'
@@ -23,6 +24,8 @@ export function OrderDetailPage() {
   const navigate = useNavigate()
   const { data: order, isLoading } = useOrder(id!)
   const updateOrder = useUpdateOrder()
+  const deleteOrder = useDeleteOrder()
+  const [editing, setEditing] = useState(false)
 
   if (isLoading) return <div className="flex items-center justify-center h-full text-gray-400">Carregando...</div>
   if (!order) return <div className="flex items-center justify-center h-full text-gray-400">Pedido não encontrado</div>
@@ -30,11 +33,23 @@ export function OrderDetailPage() {
   async function handleStatusChange(status: OrderStatus) {
     await updateOrder.mutateAsync({ id: id!, status })
   }
+  function removeOrder() {
+    if (confirm('Excluir este pedido? Esta ação não pode ser desfeita.')) {
+      deleteOrder.mutate(id!, { onSuccess: () => navigate('/pedidos') })
+    }
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+      {editing && <OrderEditModal order={order} onClose={() => setEditing(false)} />}
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <button onClick={() => navigate(-1)} className="text-xs text-gray-400 hover:text-gray-700 mb-1">← Voltar</button>
+        <div className="flex items-center justify-between mb-1">
+          <button onClick={() => navigate(-1)} className="text-xs text-gray-400 hover:text-gray-700">← Voltar</button>
+          <div className="flex gap-2">
+            <button onClick={() => setEditing(true)} className="btn-secondary text-xs">Editar</button>
+            <button onClick={removeOrder} className="btn-danger text-xs">Excluir</button>
+          </div>
+        </div>
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -151,6 +166,74 @@ export function OrderDetailPage() {
         <div className="w-80 shrink-0 border-l border-gray-200 dark:border-gray-800 p-4 overflow-y-auto">
           <ActivityTimeline orderId={id} accountId={order.account_id} />
         </div>
+      </div>
+    </div>
+  )
+}
+
+function OrderEditModal({ order, onClose }: { order: any; onClose: () => void }) {
+  const update = useUpdateOrder()
+  const [form, setForm] = useState({
+    po_number: order.po_number ?? '',
+    internal_number: order.internal_number ?? '',
+    total_value: String(order.total_value ?? ''),
+    currency: order.currency ?? 'USD',
+    fx_to_brl: String(order.fx_to_brl ?? ''),
+    promised_delivery_at: order.promised_delivery_at ? String(order.promised_delivery_at).slice(0, 10) : '',
+  })
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    await update.mutateAsync({
+      id: order.id,
+      po_number: form.po_number || null,
+      internal_number: form.internal_number || null,
+      total_value: parseFloat(form.total_value) || 0,
+      currency: form.currency,
+      fx_to_brl: parseFloat(form.fx_to_brl) || 0,
+      promised_delivery_at: form.promised_delivery_at || null,
+    })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="card w-full max-w-md p-5 shadow-xl animate-fade-in">
+        <h2 className="font-semibold mb-4">Editar pedido</h2>
+        <form onSubmit={submit} className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="label">PO do cliente</label>
+              <input value={form.po_number} onChange={(e) => setForm((f) => ({ ...f, po_number: e.target.value }))} className="input" />
+            </div>
+            <div>
+              <label className="label">Nº interno</label>
+              <input value={form.internal_number} onChange={(e) => setForm((f) => ({ ...f, internal_number: e.target.value }))} className="input" />
+            </div>
+            <div>
+              <label className="label">Valor</label>
+              <input type="number" step="0.01" value={form.total_value} onChange={(e) => setForm((f) => ({ ...f, total_value: e.target.value }))} className="input" />
+            </div>
+            <div>
+              <label className="label">Moeda</label>
+              <select value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))} className="input">
+                {['USD', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG'].map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">FX BRL</label>
+              <input type="number" step="0.0001" value={form.fx_to_brl} onChange={(e) => setForm((f) => ({ ...f, fx_to_brl: e.target.value }))} className="input" />
+            </div>
+            <div>
+              <label className="label">Entrega prevista</label>
+              <input type="date" value={form.promised_delivery_at} onChange={(e) => setForm((f) => ({ ...f, promised_delivery_at: e.target.value }))} className="input" />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <button type="button" onClick={onClose} className="btn-ghost">Cancelar</button>
+            <button type="submit" disabled={update.isPending} className="btn-primary">{update.isPending ? 'Salvando…' : 'Salvar'}</button>
+          </div>
+        </form>
       </div>
     </div>
   )

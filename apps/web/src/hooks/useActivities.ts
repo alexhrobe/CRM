@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { CreateActivity } from '@crm-plp/shared'
+import type { CreateActivity, ActivityKind } from '@crm-plp/shared'
 
 export function useActivities(filters?: { quoteId?: string; accountId?: string; orderId?: string }) {
   return useQuery({
@@ -37,5 +37,28 @@ export function useCreateActivity() {
       if (vars.quote_id) qc.invalidateQueries({ queryKey: ['quotes', vars.quote_id] })
       if (vars.account_id) qc.invalidateQueries({ queryKey: ['accounts', vars.account_id] })
     },
+  })
+}
+
+export function useUpdateActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<{ kind: ActivityKind; title: string | null; body: string | null }>) => {
+      const { data, error } = await supabase.from('activities').update(updates).eq('id', id).select().single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['activities'] }),
+  })
+}
+
+export function useDeleteActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('activities').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['activities'] }),
   })
 }

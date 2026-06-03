@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { QuoteRequestWithAccount, RequestStatus } from '@crm-plp/shared'
-import { useQuoteRequests, useCreateQuoteRequest, useUpdateQuoteRequest } from '@/hooks/useQuoteRequests'
+import { useQuoteRequests, useCreateQuoteRequest, useUpdateQuoteRequest, useDeleteQuoteRequest } from '@/hooks/useQuoteRequests'
 import { useAccounts } from '@/hooks/useAccounts'
 import { QuoteForm } from '@/components/QuoteForm'
 import { CountryBadge } from '@/components/CountryBadge'
@@ -16,6 +16,7 @@ export function RequestsPage() {
   const [converting, setConverting] = useState<QuoteRequestWithAccount | null>(null)
   const { data: requests = [], isLoading } = useQuoteRequests(filter)
   const update = useUpdateQuoteRequest()
+  const del = useDeleteQuoteRequest()
   const navigate = useNavigate()
 
   return (
@@ -96,6 +97,12 @@ export function RequestsPage() {
                     Descartar
                   </button>
                 )}
+                <button
+                  onClick={() => { if (confirm('Excluir esta solicitação? Esta ação não pode ser desfeita.')) del.mutate(r.id) }}
+                  className="btn-ghost text-xs text-gray-400 hover:text-red-600"
+                >
+                  Excluir
+                </button>
               </div>
             </div>
           ))
