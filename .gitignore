@@ -12,6 +12,8 @@ dist-ssr/
 .env.*
 !.env.example
 apps/web/.env.local
+# Apenas valores PÚBLICOS do cliente (URL + anon key) — vão no bundle de qualquer forma
+!apps/web/.env.production
 
 # Supabase
 supabase/.branches/
