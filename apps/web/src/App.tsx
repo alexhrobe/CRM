@@ -5,6 +5,7 @@ import { Sidebar } from '@/components/Sidebar'
 
 import { LoginPage } from '@/pages/LoginPage'
 import { InboxPage } from '@/pages/InboxPage'
+import { TodayPage } from '@/pages/TodayPage'
 import { KanbanPage } from '@/pages/KanbanPage'
 import { TablePage } from '@/pages/TablePage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -52,6 +53,7 @@ function Router() {
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<InboxPage />} />
+          <Route path="/hoje" element={<TodayPage />} />
           <Route path="/kanban" element={<KanbanPage />} />
           <Route path="/tabela" element={<TablePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />

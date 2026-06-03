@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { useTheme } from '@/lib/theme'
+import { useTasks } from '@/hooks/useTasks'
 import { cn } from '@/lib/utils'
 
 const NAV = [
   { to: '/', label: 'Pipeline', icon: '⬡' },
+  { to: '/hoje', label: 'Hoje', icon: '🔔' },
   { to: '/pedidos', label: 'Pedidos', icon: '📦' },
   { to: '/contas', label: 'Contas', icon: '🏢' },
   { to: '/contatos', label: 'Contatos', icon: '👤' },
@@ -16,6 +18,7 @@ const NAV = [
 export function Sidebar() {
   const { user } = useAuth()
   const { theme, toggle } = useTheme()
+  const { count } = useTasks()
 
   return (
     <nav className="flex flex-col w-14 shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 h-screen sticky top-0">
@@ -33,13 +36,18 @@ export function Sidebar() {
             end={item.to === '/'}
             title={item.label}
             className={({ isActive }) => cn(
-              'w-9 h-9 flex items-center justify-center rounded-lg text-base transition-colors',
+              'relative w-9 h-9 flex items-center justify-center rounded-lg text-base transition-colors',
               isActive
                 ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
                 : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800',
             )}
           >
             <span role="img" aria-label={item.label} className="text-[18px] leading-none">{item.icon}</span>
+            {item.to === '/hoje' && count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                {count > 9 ? '9+' : count}
+              </span>
+            )}
           </NavLink>
         ))}
       </div>

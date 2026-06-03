@@ -76,7 +76,7 @@ export const pipelineQuotes = pipeline.map((p, i) => {
     product_description: p.product_description,
     received_at: p.received_at,
     sent_at: ['sent', 'negotiation', 'stalled'].includes(p.stage) ? ago(p.days_in_stage + 1) : null,
-    expected_close_at: null,
+    expected_close_at: p.quote_number === 'PLP-2024-0331' ? ago(-3) : null, // validade em 3 dias (demo)
     decided_at: null,
     loss_reason: null, loss_competitor: null, loss_notes: null,
     commission_pct_ds: 0.02, commission_pct_dfj: 0.01, commission_pct_other: 0,
