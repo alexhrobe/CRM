@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24 # pnpm 11.5 usa builtins que exigem Node >= 22
 
       - name: Cache pnpm store
         uses: actions/cache@v4
@@ -30,16 +30,7 @@ jobs:
           restore-keys: ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        shell: bash
-        run: |
-          echo "node=$(node -v) pnpm=$(pnpm -v) which=$(which pnpm)"
-          set +e
-          pnpm install --frozen-lockfile 2>&1 | tee /tmp/pi.log
-          code=${PIPESTATUS[0]}
-          if [ "$code" -ne 0 ]; then
-            echo "::error::pnpm v$(pnpm -v) exit=$code :: $(tail -10 /tmp/pi.log | tr '\n' '|' | head -c 1200)"
-          fi
-          exit "$code"
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
         run: pnpm --filter web typecheck
