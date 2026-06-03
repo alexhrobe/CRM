@@ -10,6 +10,11 @@ Sistema de gestão de cotações e pedidos de exportação da PLP Brasil.
 >
 > **🔒 Segurança:** modelo de ameaça, RLS por papel e auditoria em
 > [SECURITY.md](SECURITY.md).
+>
+> **🧪 Modo demo:** sem credenciais Supabase (ou com `VITE_DEMO=1`), o app sobe
+> com um cliente em memória e dados fictícios realistas — 100% navegável sem
+> backend. Ideal para demonstração/deploy de preview. Com credenciais reais,
+> usa o backend normalmente.
 
 ## Stack
 
