@@ -15,6 +15,12 @@ Sistema de gestão de cotações e pedidos de exportação da PLP Brasil.
 > com um cliente em memória e dados fictícios realistas — 100% navegável sem
 > backend. Ideal para demonstração/deploy de preview. Com credenciais reais,
 > usa o backend normalmente.
+>
+> **📥 Importar proposta (Excel):** no Inbox, "Importar proposta" lê um `.xlsx`
+> em memória (não armazena), extrai cliente/contato/itens e cria a cotação no
+> pipeline, reaproveitando a conta se já existir. Modelo em
+> [`docs/modelo-proposta.xlsx`](docs/modelo-proposta.xlsx); rótulos
+> ajustáveis em `apps/web/src/lib/proposal/parseProposal.ts`.
 
 ## Stack
 

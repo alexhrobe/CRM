@@ -357,3 +357,46 @@ export interface ReportKpis {
   total_quoted_brl: number
   total_orders_brl: number
 }
+
+// ─── Importação de proposta (Excel) ───────────────────────────────────────────
+// Forma normalizada extraída de uma planilha de proposta. A planilha não é
+// armazenada — serve apenas para alimentar conta + contato + cotação + itens.
+
+export const ProposalItemSchema = z.object({
+  product_code: z.string().nullable(),
+  description: z.string().nullable(),
+  quantity: z.number().nullable(),
+  unit_price: z.number().nullable(),
+  total: z.number().nullable(),
+})
+export type ProposalItem = z.infer<typeof ProposalItemSchema>
+
+export const ParsedProposalSchema = z.object({
+  account: z.object({
+    legal_name: z.string().min(1, 'Cliente não encontrado na planilha'),
+    country: z.string().min(1, 'País não encontrado na planilha'),
+    country_iso2: z.string().length(2).nullable().optional(),
+    segment: z.string().nullable().optional(),
+  }),
+  contact: z
+    .object({
+      name: z.string().min(1),
+      email: z.string().email().nullable().optional(),
+      phone: z.string().nullable().optional(),
+      role: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+  quote: z.object({
+    quote_number: z.string().min(1, 'Número da proposta não encontrado'),
+    quote_type: QuoteType.default('competitive'),
+    currency: z.string().default('USD'),
+    total_value: z.number().nullable(),
+    product_group: ProductGroup.nullable().optional(),
+    product_description: z.string().nullable().optional(),
+    received_at: z.string().min(1),
+    expected_close_at: z.string().nullable().optional(),
+  }),
+  items: z.array(ProposalItemSchema).default([]),
+})
+export type ParsedProposal = z.infer<typeof ParsedProposalSchema>

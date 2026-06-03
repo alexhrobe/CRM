@@ -6,6 +6,7 @@ import { StageBadge } from '@/components/StageBadge'
 import { TypeBadge } from '@/components/TypeBadge'
 import { CountryBadge } from '@/components/CountryBadge'
 import { QuoteForm } from '@/components/QuoteForm'
+import { ImportProposalModal } from '@/components/ImportProposalModal'
 import {
   formatCurrency, formatRelativeDate, priorityScore,
   ALERT_SEVERITY_COLORS, PRODUCT_GROUP_LABELS
@@ -104,6 +105,7 @@ export function InboxPage() {
   const { data: quotes = [], isLoading } = usePipelineQuotes()
   const [viewMode, setViewMode] = useState<ViewMode>('inbox')
   const [showForm, setShowForm] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const navigate = useNavigate()
 
   const sorted = useMemo(() =>
@@ -151,11 +153,25 @@ export function InboxPage() {
               </button>
             ))}
           </div>
+          <button onClick={() => setShowImport(true)} className="btn-secondary text-xs">
+            ↥ Importar proposta
+          </button>
           <button onClick={() => setShowForm(true)} className="btn-primary text-xs">
             + Nova Cotação
           </button>
         </div>
       </div>
+
+      {/* Import proposal modal */}
+      {showImport && (
+        <ImportProposalModal
+          onClose={() => setShowImport(false)}
+          onImported={(id) => {
+            setShowImport(false)
+            navigate(`/cotacoes/${id}`)
+          }}
+        />
+      )}
 
       {/* Form modal */}
       {showForm && (

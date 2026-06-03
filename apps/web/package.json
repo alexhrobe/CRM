@@ -25,6 +25,7 @@
     "@tanstack/react-query-devtools": "^5.40.0",
     "clsx": "^2.1.1",
     "d3": "^7.9.0",
+    "exceljs": "^4.4.0",
     "date-fns": "^3.6.0",
     "dotenv": "^17.4.2",
     "react": "^18.3.1",
