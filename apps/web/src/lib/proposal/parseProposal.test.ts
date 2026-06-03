@@ -40,6 +40,61 @@ describe('parseProposalBuffer', () => {
     expect(p.quote.total_value).toBe(16500) // linha de TOTAL da tabela
   })
 
+  it('entende o modelo comercial da PLP (espanhol, cliente posicional, numeração)', async () => {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Proposta')
+    ws.getCell('C4').value = 'PROPUESTA COMERCIAL'
+    ws.getCell('C6').value = 'A'
+    ws.getCell('N6').value = 'Cajamar, 02 de Junio de 2026.'
+    ws.getCell('C7').value = 'RTHO ELEKTRISCHE SPA'
+    ws.getCell('C8').value = 'SANTIAGO, CHILE'
+    ws.getCell('C10').value = 'Atn:'
+    ws.getCell('D10').value = 'Sr. Juan Pérez'
+    ws.getCell('C11').value = 'Nº Ref.:'
+    ws.getCell('D11').value = '79583'
+    ws.getCell('C12').value = 'Asunto:'
+    ws.getCell('D12').value = 'Su solicitud E-mail, de 02/06/2026'
+    ws.getCell('C16').value = '1. Planilla de precios'
+    ws.getCell('C18').value = 'Ítem'
+    ws.getCell('D18').value = 'Referencia PLP'
+    ws.getCell('E18').value = 'Descripción'
+    ws.getCell('F18').value = 'Un'
+    ws.getCell('G18').value = 'Cantidad'
+    ws.getCell('H18').value = 'Precio Un. (US$)'
+    ws.getCell('I18').value = 'Precio Total (US$)'
+    // linha 19 fica em branco de propósito (como no modelo real)
+    ws.getCell('C20').value = '0001'
+    ws.getCell('D20').value = '@CAU0230387AMN0'
+    ws.getCell('E20').value = 'CADENA ANCLAJE 2CB E=300mm JESSAMINE'
+    ws.getCell('F20').value = 'UN'
+    ws.getCell('G20').value = 6
+    ws.getCell('H20').value = 280
+    ws.getCell('I20').value = 1680
+    ws.getCell('C21').value = '0002'
+    ws.getCell('D21').value = '@CSU0230387AMN0'
+    ws.getCell('E21').value = 'CADENA SUSP "I" 2CB E=300mm'
+    ws.getCell('F21').value = 'UN'
+    ws.getCell('G21').value = 6
+    ws.getCell('H21').value = 160
+    ws.getCell('I21').value = 960
+    ws.getCell('F27').value = 'Total Cotización(US$)'
+    ws.getCell('I27').value = 2640
+    ws.getCell('C30').value = '2.1. Moneda de cotización: Dolares Estadunidenses.'
+    const buf = (await wb.xlsx.writeBuffer()) as ArrayBuffer
+
+    const p = await parseProposalBuffer(buf)
+    expect(p.account.legal_name).toBe('RTHO ELEKTRISCHE SPA') // bloco posicional após "A"
+    expect(p.account.country_iso2).toBe('CL') // detectado de "SANTIAGO, CHILE"
+    expect(p.contact?.name).toBe('Sr. Juan Pérez') // rótulo "Atn:"
+    expect(p.quote.quote_number).toBe('79583') // "Nº Ref.:"
+    expect(p.quote.currency).toBe('USD') // apesar do prefixo "2.1." e de palavras com "pen"
+    expect(p.quote.product_group).toBe('cadeias') // CADENA -> cadeias
+    expect(p.items).toHaveLength(2) // pula a linha em branco após o cabeçalho
+    expect(p.items[0].product_code).toBe('@CAU0230387AMN0')
+    expect(p.quote.total_value).toBe(2640)
+    expect(new Date(p.quote.received_at).toISOString().slice(0, 10)).toBe('2026-06-02')
+  })
+
   it('cai para a data de hoje quando a planilha não traz data', async () => {
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('P')

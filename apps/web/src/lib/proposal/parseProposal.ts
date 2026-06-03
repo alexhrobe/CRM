@@ -1,47 +1,57 @@
 /**
  * Parser determinístico de proposta em Excel (.xlsx).
  *
- * Estratégia: dirigida por RÓTULOS e CABEÇALHOS (não por coordenadas fixas), o
- * que tolera pequenas variações de layout. Os mapas de rótulo abaixo são o
- * único ponto a ajustar para casar com o seu modelo de planilha.
+ * Calibrado para o modelo comercial da PLP (espanhol) e tolerante a variações:
+ * combina rótulos, valor "inline" (label: valor na mesma célula), bloco de
+ * cliente posicional (linha após "A") e detecção da tabela de itens pelos
+ * cabeçalhos. Os mapas abaixo são o único ponto a ajustar para outros modelos.
  *
  * A planilha NÃO é persistida — só é lida em memória para alimentar o cadastro.
  */
 import type { ParsedProposal, ProposalItem } from '@crm-plp/shared'
 
-// ─── Mapas de rótulo (ajuste aqui para o seu modelo) ──────────────────────────
+// ─── Mapas de rótulo (ajuste aqui) ────────────────────────────────────────────
 export const LABELS = {
   legal_name: ['cliente', 'client', 'empresa', 'razao social', 'customer', 'comprador'],
   country: ['pais', 'country', 'destino'],
-  contact_name: ['contato', 'contact', 'atencion', 'att', 'a/c', 'responsavel'],
+  contact_name: ['contato', 'contact', 'atencion', 'atn', 'att', 'a/c', 'responsavel'],
   email: ['email', 'e-mail', 'correo'],
   phone: ['telefone', 'fone', 'phone', 'tel', 'celular', 'whatsapp'],
-  quote_number: ['proposta', 'cotacao', 'quote', 'numero', 'no', 'n', 'referencia', 'ref', 'oferta', 'orcamento'],
-  currency: ['moeda', 'currency', 'divisa'],
-  received_at: ['data', 'date', 'fecha', 'emissao'],
-  expected_close_at: ['validade', 'valido ate', 'valid', 'vencimento', 'validez'],
-  total: ['valor total', 'total geral', 'total da proposta', 'total', 'importe total', 'grand total'],
-  product_description: ['objeto', 'descricao da proposta', 'assunto', 'projeto', 'obra'],
+  quote_number: ['n ref', 'no ref', 'ref', 'referencia', 'proposta', 'cotacion', 'cotacao', 'quote', 'numero', 'oferta', 'orcamento'],
+  currency: ['moeda', 'moneda', 'currency', 'divisa'],
+  total: ['total cotizacion', 'valor total', 'total geral', 'total da proposta', 'importe total', 'grand total', 'total'],
+  product_description: ['objeto', 'asunto', 'descricao da proposta', 'projeto', 'obra'],
 } as const
 
 const ITEM_HEADERS = {
-  product_code: ['codigo', 'code', 'cod', 'item', 'ref', 'sku', 'part number', 'pn'],
-  description: ['descricao', 'descripcion', 'description', 'produto', 'product', 'detalhe'],
-  quantity: ['qtd', 'quant', 'quantidade', 'cantidad', 'quantity', 'qty'],
-  unit_price: ['preco unit', 'valor unit', 'unit price', 'p unit', 'precio', 'preco unitario', 'unitario'],
-  total: ['total', 'subtotal', 'valor total', 'importe', 'amount'],
+  product_code: ['referencia', 'codigo', 'code', 'cod', 'sku', 'part number', 'pn'],
+  description: ['descripcion', 'descricao', 'description', 'produto', 'product', 'detalhe'],
+  quantity: ['cantidad', 'qtd', 'quant', 'quantidade', 'quantity', 'qty', 'cant'],
+  unit_price: ['precio un', 'precio unit', 'precio unitario', 'preco unit', 'preco unitario', 'valor unit', 'unit price', 'p unit'],
+  total: ['precio total', 'valor total', 'importe', 'total', 'subtotal', 'amount'],
 } as const
 
-// ─── Normalização ─────────────────────────────────────────────────────────────
 const DIACRITICS = /[̀-ͯ]/g
 function norm(v: unknown): string {
   return String(v ?? '')
     .normalize('NFD')
-    .replace(DIACRITICS, '') // remove acentos (diacríticos combinantes)
+    .replace(DIACRITICS, '') // remove acentos
+    .replace(/[ºª°#]/g, ' ') // ordinais/símbolos viram separador (Nº -> n)
     .toLowerCase()
+    .replace(/^\s*\d+(\.\d+)*[.)]\s+/, '') // tira numeração de lista ("2.1.", "3.")
     .replace(/[:\s]+$/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** casa se o texto começa com o rótulo seguido de fronteira (espaço/pontuação/fim) */
+function matchLabel(text: string, labels: readonly string[]): boolean {
+  const c = norm(text)
+  return labels.some((l) => c === l || new RegExp('^' + escapeRe(l) + '(?![a-z0-9])').test(c))
 }
 
 type Cell = { text: string; num: number | null; date: Date | null }
@@ -69,50 +79,48 @@ const COUNTRY_ISO2: Record<string, string> = {
   mexico: 'MX', bolivia: 'BO', equador: 'EC', ecuador: 'EC', venezuela: 'VE',
   'estados unidos': 'US', eua: 'US', usa: 'US', espanha: 'ES', portugal: 'PT',
 }
+const titleCase = (s: string) => s.replace(/\b\w/g, (m) => m.toUpperCase())
 
 const PRODUCT_GROUP_KEYWORDS: Array<[RegExp, string]> = [
   [/opgw|fibra/, 'opgw_fibra'],
   [/preformad/, 'preformados'],
-  [/cadeia|isolad.*cadeia/, 'cadeias'],
-  [/amortecedor|svd|stockbridge|espacad/, 'svd_amortecedor'],
+  [/cadena|cadeia/, 'cadeias'],
+  [/amorti|amortecedor|svd|stockbridge|espacad/, 'svd_amortecedor'],
   [/cruzeta/, 'cruzeta'],
-  [/isolador/, 'isoladores'],
+  [/aislador|isolador/, 'isoladores'],
   [/conector/, 'conectores'],
-  [/ferragem|ferrag/, 'ferragens'],
+  [/ferragem|ferrag|herraje/, 'ferragens'],
 ]
 
 function normalizeCurrency(text: string): string {
   const t = norm(text)
-  if (/brl|r\$|real|reais/.test(t)) return 'BRL'
-  if (/eur|€/.test(t)) return 'EUR'
-  if (/ars/.test(t)) return 'ARS'
-  if (/clp/.test(t)) return 'CLP'
-  if (/cop/.test(t)) return 'COP'
-  if (/pen/.test(t)) return 'PEN'
-  if (/pyg/.test(t)) return 'PYG'
-  if (/usd|us\$|dolar|\$/.test(t)) return 'USD'
+  // Códigos exigem fronteira de palavra (evita casar "pen" dentro de palavras);
+  // dólar/US$ tem prioridade por ser o caso comum das propostas de exportação.
+  if (/\b(brl|reais|real)\b|r\$/.test(t)) return 'BRL'
+  if (/\beur\b|€/.test(t)) return 'EUR'
+  if (/\b(usd|dolar|dolares|dollar)\b/.test(t) || /us\$/.test(t)) return 'USD'
+  if (/\bars\b/.test(t)) return 'ARS'
+  if (/\bclp\b/.test(t)) return 'CLP'
+  if (/\bcop\b/.test(t)) return 'COP'
+  if (/\bpen\b/.test(t)) return 'PEN'
+  if (/\bpyg\b/.test(t)) return 'PYG'
+  if (/\$/.test(t)) return 'USD'
   return ''
 }
 
-function toISODate(c: Cell): string | null {
+function toISO(c: Cell): string | null {
   if (c.date) return c.date.toISOString()
   const s = c.text.trim()
   if (!s) return null
-  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  let m = s.match(/(\d{4})-(\d{2})-(\d{2})/)
   if (m) return new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00Z`).toISOString()
-  m = s.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})/) // dd/mm/yyyy
+  m = s.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})/) // dd/mm/yyyy
   if (m) {
     const [, d, mo, y] = m
     const yr = y.length === 2 ? `20${y}` : y
     return new Date(`${yr}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}T12:00:00Z`).toISOString()
   }
-  const t = Date.parse(s)
-  return Number.isNaN(t) ? null : new Date(t).toISOString()
-}
-
-function matchLabel(cellText: string, labels: readonly string[]): boolean {
-  const c = norm(cellText)
-  return labels.some((l) => c === l || c.startsWith(l + ' ') || c === l + '.')
+  return null
 }
 
 /** Lê um .xlsx (ArrayBuffer) e devolve a proposta normalizada (não validada). */
@@ -123,7 +131,6 @@ export async function parseProposalBuffer(buffer: ArrayBuffer): Promise<ParsedPr
   const ws = wb.worksheets[0]
   if (!ws) throw new Error('Planilha vazia ou ilegível.')
 
-  // matriz 0-based de células
   const grid: Cell[][] = []
   ws.eachRow({ includeEmpty: true }, (row, r) => {
     const arr: Cell[] = []
@@ -132,39 +139,30 @@ export async function parseProposalBuffer(buffer: ArrayBuffer): Promise<ParsedPr
     })
     grid[r - 1] = arr
   })
-
   const at = (r: number, c: number): Cell => grid[r]?.[c] ?? { text: '', num: null, date: null }
 
-  /** valor adjacente (direita, senão abaixo) ao primeiro rótulo encontrado */
-  function valueFor(labels: readonly string[]): Cell | null {
-    for (let r = 0; r < grid.length; r++) {
+  /** valor de um rótulo: inline ("label: valor"), à direita, ou abaixo */
+  function valueFor(labels: readonly string[], maxRow = grid.length): Cell | null {
+    for (let r = 0; r < Math.min(maxRow, grid.length); r++) {
       const row = grid[r] ?? []
       for (let c = 0; c < row.length; c++) {
-        if (!row[c]?.text) continue
-        if (matchLabel(row[c].text, labels)) {
-          for (let cc = c + 1; cc < c + 6; cc++) if (at(r, cc).text) return at(r, cc)
-          if (at(r + 1, c).text) return at(r + 1, c)
+        const raw = row[c]?.text
+        if (!raw || !matchLabel(raw, labels)) continue
+        const idx = raw.indexOf(':')
+        if (idx >= 0) {
+          const after = raw.slice(idx + 1).trim()
+          if (after) return coerce(after)
         }
+        for (let cc = c + 1; cc < c + 6; cc++) if (at(r, cc).text) return at(r, cc)
+        if (at(r + 1, c).text) return at(r + 1, c)
       }
     }
     return null
   }
 
-  // ─── Cabeçalho da proposta ───────────────────────────────────────────────
-  const legal_name = valueFor(LABELS.legal_name)?.text.trim() ?? ''
-  const countryText = valueFor(LABELS.country)?.text.trim() ?? ''
-  const contactName = valueFor(LABELS.contact_name)?.text.trim() ?? ''
-  const email = valueFor(LABELS.email)?.text.trim() || null
-  const phone = valueFor(LABELS.phone)?.text.trim() || null
-  const quote_number = valueFor(LABELS.quote_number)?.text.trim() ?? ''
-  const currency = normalizeCurrency(valueFor(LABELS.currency)?.text ?? '') || 'USD'
-  const received_at = toISODate(valueFor(LABELS.received_at) ?? { text: '', num: null, date: null }) ?? new Date().toISOString()
-  const expected_close_at = toISODate(valueFor(LABELS.expected_close_at) ?? { text: '', num: null, date: null })
-  const objetoDesc = valueFor(LABELS.product_description)?.text.trim() || null
-
-  // ─── Tabela de itens ─────────────────────────────────────────────────────
+  // ─── Tabela de itens (detecta o cabeçalho) ───────────────────────────────
   let headerRow = -1
-  let colMap: Partial<Record<keyof typeof ITEM_HEADERS, number>> = {}
+  const colMap: Partial<Record<keyof typeof ITEM_HEADERS, number>> = {}
   for (let r = 0; r < grid.length; r++) {
     const row = grid[r] ?? []
     const map: Partial<Record<keyof typeof ITEM_HEADERS, number>> = {}
@@ -177,34 +175,37 @@ export async function parseProposalBuffer(buffer: ArrayBuffer): Promise<ParsedPr
     }
     if (map.description !== undefined && (map.quantity !== undefined || map.unit_price !== undefined || map.total !== undefined)) {
       headerRow = r
-      colMap = map
+      Object.assign(colMap, map)
       break
     }
   }
+  const itemsTop = headerRow >= 0 ? headerRow : grid.length
 
   const items: ProposalItem[] = []
   let summedTotal = 0
   let grandTotalFromTable: number | null = null
   if (headerRow >= 0) {
+    let started = false
     for (let r = headerRow + 1; r < grid.length; r++) {
       const desc = colMap.description !== undefined ? at(r, colMap.description) : { text: '', num: null, date: null }
       const code = colMap.product_code !== undefined ? at(r, colMap.product_code) : null
       const qty = colMap.quantity !== undefined ? at(r, colMap.quantity) : null
       const unit = colMap.unit_price !== undefined ? at(r, colMap.unit_price) : null
       const tot = colMap.total !== undefined ? at(r, colMap.total) : null
-      const anyVal = [desc.text, code?.text, qty?.num, unit?.num, tot?.num].some((v) => v != null && v !== '')
-      if (!anyVal) break // linha em branco encerra a tabela
-      // linha de total (descrição vazia OU literal "Total/Subtotal", sem qtd) → grand total, não item
+      const blank = ![desc.text, code?.text, qty?.num, unit?.num, tot?.num].some((v) => v != null && v !== '')
+      if (blank) {
+        if (started) break // linha vazia após itens encerra
+        continue // pula linhas em branco entre cabeçalho e itens
+      }
       const isTotalRow =
-        tot?.num != null &&
-        (qty?.num == null) &&
-        !code?.text &&
-        (!desc.text || matchLabel(desc.text, ['total', 'subtotal', 'total geral', 'valor total', 'importe total', 'total da proposta']))
+        tot?.num != null && qty?.num == null && !code?.text &&
+        (!desc.text || matchLabel(desc.text, ['total', 'subtotal', 'total cotizacion', 'total geral', 'valor total', 'importe total']))
       if (isTotalRow) {
         grandTotalFromTable = tot!.num
         continue
       }
-      if (!desc.text && code?.text == null) continue
+      if (!desc.text && !code?.text) continue
+      started = true
       items.push({
         product_code: code?.text.trim() || null,
         description: desc.text.trim() || null,
@@ -216,25 +217,80 @@ export async function parseProposalBuffer(buffer: ArrayBuffer): Promise<ParsedPr
     }
   }
 
-  // Preferir o total derivado da tabela (linha de total ou soma dos itens);
-  // o rótulo solto "Total" pode colidir com o cabeçalho da tabela de itens.
+  // ─── Cabeçalho da proposta (campos do cliente ficam ACIMA da tabela) ──────
+  let legal_name = valueFor(LABELS.legal_name, itemsTop)?.text.trim() ?? ''
+  let countryText = valueFor(LABELS.country, itemsTop)?.text.trim() ?? ''
+
+  // Fallback posicional: bloco do cliente após uma célula "A" (modelo PLP)
+  if (!legal_name) {
+    let aRow = -1
+    for (let r = 0; r < Math.min(itemsTop, 20) && aRow < 0; r++)
+      for (let c = 0; c < 5; c++) if (norm(at(r, c).text) === 'a') { aRow = r; break }
+    if (aRow >= 0) {
+      const lines: string[] = []
+      for (let r = aRow + 1; r < itemsTop && lines.length < 2; r++) {
+        const t = (grid[r] ?? []).find((x) => x?.text)?.text?.trim()
+        if (t) lines.push(t)
+      }
+      legal_name = lines[0] ?? ''
+      if (!countryText && lines[1]) countryText = lines[1]
+    }
+  }
+
+  // País: detecta um país conhecido em qualquer lugar se ainda não resolvido
+  let country_iso2: string | null = COUNTRY_ISO2[norm(countryText)] ?? null
+  if (!country_iso2) {
+    outer: for (let r = 0; r < Math.min(itemsTop, 25); r++)
+      for (const cell of grid[r] ?? []) {
+        const n = norm(cell?.text)
+        for (const key of Object.keys(COUNTRY_ISO2)) {
+          if (new RegExp('\\b' + key + '\\b').test(n)) {
+            country_iso2 = COUNTRY_ISO2[key]
+            if (!COUNTRY_ISO2[norm(countryText)]) countryText = titleCase(key)
+            break outer
+          }
+        }
+      }
+  } else {
+    countryText = titleCase(countryText)
+  }
+
+  const contactName = valueFor(LABELS.contact_name, itemsTop)?.text.trim() ?? ''
+  const emailRaw = valueFor(LABELS.email, itemsTop)?.text.trim() ?? ''
+  const email = /\S+@\S+\.\S+/.test(emailRaw) ? emailRaw : null
+  const phone = valueFor(LABELS.phone, itemsTop)?.text.trim() || null
+  const quote_number = valueFor(LABELS.quote_number, itemsTop)?.text.trim() ?? ''
+
+  // Moeda: rótulo (qualquer lugar) ou pistas no texto (US$, dólar…)
+  let currency = normalizeCurrency(valueFor(LABELS.currency)?.text ?? '')
+  if (!currency) {
+    const all = grid.flatMap((row) => (row ?? []).map((c) => c?.text ?? '')).join(' ')
+    currency = normalizeCurrency(all) || 'USD'
+  }
+
+  // Data: célula de rótulo ou primeiro dd/mm/aaaa do documento
+  let received_at = toISO(valueFor(LABELS.product_description) ?? { text: '', num: null, date: null })
+  if (!received_at) {
+    for (let r = 0; r < grid.length && !received_at; r++)
+      for (const c of grid[r] ?? []) {
+        const iso = toISO(c)
+        if (iso) { received_at = iso; break }
+      }
+  }
+  received_at ||= new Date().toISOString()
+
   const labelTotal = valueFor(LABELS.total)?.num ?? null
   const total_value = grandTotalFromTable ?? (summedTotal > 0 ? summedTotal : null) ?? labelTotal
 
-  // ─── Inferências ──────────────────────────────────────────────────────────
-  const haystack = norm([objetoDesc, ...items.map((i) => i.description)].join(' '))
+  // Inferências
+  const haystack = norm(items.map((i) => i.description).join(' '))
   const product_group = PRODUCT_GROUP_KEYWORDS.find(([re]) => re.test(haystack))?.[1] ?? null
-  const country_iso2 = COUNTRY_ISO2[norm(countryText)] ?? null
-  const product_description =
-    objetoDesc ?? (items.length ? items.map((i) => i.description).filter(Boolean).slice(0, 3).join('; ') : null)
+  const product_description = items.length
+    ? items.map((i) => i.description).filter(Boolean).slice(0, 3).join('; ')
+    : null
 
   return {
-    account: {
-      legal_name,
-      country: countryText,
-      country_iso2,
-      segment: null,
-    },
+    account: { legal_name, country: countryText, country_iso2, segment: null },
     contact: contactName ? { name: contactName, email, phone, role: null } : null,
     quote: {
       quote_number,
@@ -244,7 +300,7 @@ export async function parseProposalBuffer(buffer: ArrayBuffer): Promise<ParsedPr
       product_group: product_group as ParsedProposal['quote']['product_group'],
       product_description,
       received_at,
-      expected_close_at,
+      expected_close_at: null,
     },
     items,
   }
