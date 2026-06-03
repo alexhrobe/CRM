@@ -163,6 +163,32 @@ export const accountHealth = accounts.map((a, i) => ({
   total_quotes: [9, 7, 6, 3, 2, 4, 5, 4, 3, 3][i] ?? 0,
 }))
 
+// ─── Solicitações de orçamento (fila / ordem de chegada) ──────────────────────
+
+export const quoteRequests = [
+  { acc: 'acc-ypf', from: 'Compras YPF', email: 'compras@ypf.com', subj: 'Solicitud cotización preformados LT 500kV', days: 6, status: 'new' },
+  { acc: 'acc-isa', from: 'Ing. Marta Ruiz', email: 'mruiz@isa.com.co', subj: 'RFQ cadenas 500kV proyecto Bolívar', days: 4, status: 'new' },
+  { acc: 'acc-cge', from: 'Abastecimiento CGE', email: 'abast@cge.cl', subj: 'Pedido de oferta — ferragens 220kV', days: 2, status: 'quoting' },
+  { acc: 'acc-statkraft', from: 'Procurement Statkraft', email: 'proc@statkraft.pe', subj: 'Quote request OPGW 24F', days: 1, status: 'new' },
+].map((r, i) => {
+  const a = accName(r.acc)
+  return {
+    id: `req-${i}`,
+    received_at: ago(r.days),
+    from_name: r.from,
+    from_email: r.email,
+    subject: r.subj,
+    body: `Estimados, solicitamos cotización para el asunto: ${r.subj}. Favor indicar precio, plazo de entrega y validez. Saludos.`,
+    account_id: r.acc,
+    quote_id: null,
+    status: r.status,
+    source: 'email',
+    created_at: ago(r.days),
+    updated_at: ago(r.days),
+    account: { legal_name: a.legal_name, country: a.country, country_iso2: a.country_iso2 },
+  }
+})
+
 // ─── Usuário demo ───────────────────────────────────────────────────────────────
 
 export const demoUser = {
@@ -182,6 +208,7 @@ export const datasets: Record<string, any[]> = {
   v_country_metrics: countryMetrics,
   v_monthly_kpis: monthlyKpis,
   brain_alerts: brainAlerts,
+  quote_requests: quoteRequests,
   quotes: pipelineQuotes,
   contacts: [],
   activities: [],

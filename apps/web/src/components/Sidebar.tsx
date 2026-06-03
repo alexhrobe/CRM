@@ -2,10 +2,12 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/lib/auth'
 import { useTheme } from '@/lib/theme'
 import { useTasks } from '@/hooks/useTasks'
+import { useQuoteRequests } from '@/hooks/useQuoteRequests'
 import { cn } from '@/lib/utils'
 
 const NAV = [
   { to: '/', label: 'Pipeline', icon: '⬡' },
+  { to: '/solicitacoes', label: 'Solicitações', icon: '📨' },
   { to: '/hoje', label: 'Hoje', icon: '🔔' },
   { to: '/pedidos', label: 'Pedidos', icon: '📦' },
   { to: '/contas', label: 'Contas', icon: '🏢' },
@@ -19,6 +21,8 @@ export function Sidebar() {
   const { user } = useAuth()
   const { theme, toggle } = useTheme()
   const { count } = useTasks()
+  const { data: newRequests = [] } = useQuoteRequests('new')
+  const badges: Record<string, number> = { '/hoje': count, '/solicitacoes': newRequests.length }
 
   return (
     <nav className="flex flex-col w-14 shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 h-screen sticky top-0">
@@ -43,9 +47,9 @@ export function Sidebar() {
             )}
           >
             <span role="img" aria-label={item.label} className="text-[18px] leading-none">{item.icon}</span>
-            {item.to === '/hoje' && count > 0 && (
+            {badges[item.to] > 0 && (
               <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
-                {count > 9 ? '9+' : count}
+                {badges[item.to] > 9 ? '9+' : badges[item.to]}
               </span>
             )}
           </NavLink>

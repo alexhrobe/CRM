@@ -371,6 +371,41 @@ export const ProposalItemSchema = z.object({
 })
 export type ProposalItem = z.infer<typeof ProposalItemSchema>
 
+// ─── Solicitações de orçamento (RFQ) ──────────────────────────────────────────
+
+export const RequestStatus = z.enum(['new', 'quoting', 'quoted', 'discarded'])
+export type RequestStatus = z.infer<typeof RequestStatus>
+
+export const QuoteRequestSchema = z.object({
+  id: z.string().uuid(),
+  received_at: z.string(),
+  from_name: z.string().nullable(),
+  from_email: z.string().nullable(),
+  subject: z.string().nullable(),
+  body: z.string().nullable(),
+  account_id: z.string().uuid().nullable(),
+  quote_id: z.string().uuid().nullable(),
+  status: RequestStatus,
+  source: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+export type QuoteRequest = z.infer<typeof QuoteRequestSchema>
+
+export const CreateQuoteRequestSchema = z.object({
+  from_name: z.string().min(1, 'Informe o cliente/remetente'),
+  from_email: z.string().email('E-mail inválido').nullable().optional(),
+  subject: z.string().nullable().optional(),
+  body: z.string().nullable().optional(),
+  account_id: z.string().uuid().nullable().optional(),
+  received_at: z.string().min(1),
+})
+export type CreateQuoteRequest = z.infer<typeof CreateQuoteRequestSchema>
+
+export interface QuoteRequestWithAccount extends QuoteRequest {
+  account?: { legal_name: string; country: string; country_iso2: string | null } | null
+}
+
 export const ParsedProposalSchema = z.object({
   account: z.object({
     legal_name: z.string().min(1, 'Cliente não encontrado na planilha'),

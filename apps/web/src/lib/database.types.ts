@@ -661,6 +661,66 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_requests: {
+        Row: {
+          id: string
+          received_at: string
+          from_name: string | null
+          from_email: string | null
+          subject: string | null
+          body: string | null
+          account_id: string | null
+          quote_id: string | null
+          status: Database['public']['Enums']['request_status']
+          source: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          received_at?: string
+          from_name?: string | null
+          from_email?: string | null
+          subject?: string | null
+          body?: string | null
+          account_id?: string | null
+          quote_id?: string | null
+          status?: Database['public']['Enums']['request_status']
+          source?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          received_at?: string
+          from_name?: string | null
+          from_email?: string | null
+          subject?: string | null
+          body?: string | null
+          account_id?: string | null
+          quote_id?: string | null
+          status?: Database['public']['Enums']['request_status']
+          source?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'quote_requests_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'quote_requests_quote_id_fkey'
+            columns: ['quote_id']
+            isOneToOne: false
+            referencedRelation: 'quotes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       v_pipeline_active: {
@@ -814,6 +874,7 @@ export type Database = {
         | 'deadline_risk'
         | 'unusual_drop'
       alert_severity: 'info' | 'warning' | 'critical'
+      request_status: 'new' | 'quoting' | 'quoted' | 'discarded'
     }
     CompositeTypes: Record<never, never>
   }
