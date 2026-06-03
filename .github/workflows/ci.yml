@@ -30,7 +30,16 @@ jobs:
           restore-keys: ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        shell: bash
+        run: |
+          echo "node=$(node -v) pnpm=$(pnpm -v) which=$(which pnpm)"
+          set +e
+          pnpm install --frozen-lockfile 2>&1 | tee /tmp/pi.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            echo "::error::pnpm v$(pnpm -v) exit=$code :: $(tail -10 /tmp/pi.log | tr '\n' '|' | head -c 1200)"
+          fi
+          exit "$code"
 
       - name: Typecheck
         run: pnpm --filter web typecheck
