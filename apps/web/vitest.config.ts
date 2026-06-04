@@ -11,8 +11,5 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    // Testes rodam sempre em modo demo (client em memória, determinístico, sem
-    // rede) — independente de um .env.local com credenciais reais.
-    env: { VITE_DEMO: '1' },
   },
 })
