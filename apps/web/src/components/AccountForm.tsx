@@ -78,7 +78,7 @@ export function AccountForm({ initial, onClose, onSaved }: Props) {
             <div>
               <label className="label">Moeda padrão</label>
               <select value={form.currency_default} onChange={(e) => setForm((f) => ({ ...f, currency_default: e.target.value }))} className="input">
-                {['USD', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG'].map((c) => <option key={c}>{c}</option>)}
+                {['USD', 'BRL', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG'].map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div className="col-span-2">

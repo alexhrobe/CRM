@@ -174,13 +174,10 @@ export function QuoteDetailPage() {
                     <p className="text-sm">{quote.product_description}</p>
                   </div>
                 )}
-                {(quote.commission_pct_ds > 0 || quote.commission_pct_dfj > 0) && (
-                  <div className="col-span-2 md:col-span-3">
-                    <p className="label">Comissões</p>
-                    <div className="flex gap-3 text-xs text-gray-500">
-                      {quote.commission_pct_ds > 0 && <span>DS: {(quote.commission_pct_ds * 100).toFixed(1)}%</span>}
-                      {quote.commission_pct_dfj > 0 && <span>DFJ: {(quote.commission_pct_dfj * 100).toFixed(1)}%</span>}
-                    </div>
+                {quote.commission_pct_ds > 0 && (
+                  <div>
+                    <p className="label">Comissão</p>
+                    <p className="text-sm">{(quote.commission_pct_ds * 100).toFixed(1)}%</p>
                   </div>
                 )}
               </div>

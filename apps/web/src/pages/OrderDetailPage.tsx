@@ -230,7 +230,7 @@ function OrderEditModal({ order, onClose }: { order: any; onClose: () => void })
             <div>
               <label className="label">Moeda</label>
               <select value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))} className="input">
-                {['USD', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG'].map((c) => <option key={c}>{c}</option>)}
+                {['USD', 'BRL', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG'].map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>
             <div>

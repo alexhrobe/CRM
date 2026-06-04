@@ -12,6 +12,8 @@ import {
 
 type SortKey = 'received_at' | 'total_value' | 'stage' | 'account_name' | 'days'
 
+const ACTIVE_STAGES = ['received', 'in_analysis', 'sent', 'negotiation', 'stalled']
+
 function exportCSV(rows: any[]) {
   const headers = ['Data Recebida','Cliente','País','Nº Proposta','Produto','Valor','Moeda','Valor BRL','Estágio','Tipo','Idade(d)']
   const lines = rows.map(r => [
@@ -55,7 +57,9 @@ export function TablePage() {
 
   const filtered = useMemo(() => {
     let rows = quotes.filter((q: any) => {
-      if (stageFilter.length && !stageFilter.includes(q.stage)) return false
+      // sem filtro explícito → mostra só o pipeline ativo (igual Inbox/Kanban)
+      const stages = stageFilter.length ? stageFilter : ACTIVE_STAGES
+      if (!stages.includes(q.stage)) return false
       if (typeFilter.length && !typeFilter.includes(q.quote_type)) return false
       if (search) {
         const s = search.toLowerCase()

@@ -13,7 +13,7 @@ interface Props {
   onCancel?: () => void
 }
 
-const CURRENCIES = ['USD', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG']
+const CURRENCIES = ['USD', 'BRL', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG']
 
 export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
   const { user } = useAuth()
@@ -144,31 +144,14 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
         </div>
 
         <div>
-          <label className="label">Comissão DS (%)</label>
+          <label className="label">Comissão (%)</label>
           <input
             type="number"
             step="0.01"
             min="0"
             max="100"
             {...register('commission_pct_ds', {
-              valueAsNumber: true,
-              setValueAs: v => v / 100,
-            })}
-            className="input"
-            placeholder="0"
-          />
-        </div>
-
-        <div>
-          <label className="label">Comissão DFJ (%)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            max="100"
-            {...register('commission_pct_dfj', {
-              valueAsNumber: true,
-              setValueAs: v => v / 100,
+              setValueAs: v => (v === '' || v == null ? 0 : Number(v) / 100),
             })}
             className="input"
             placeholder="0"

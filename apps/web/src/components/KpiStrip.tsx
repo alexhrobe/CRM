@@ -1,4 +1,6 @@
 import { useCurrentMonthKpis } from '@/hooks/useDashboard'
+import { usePipelineQuotes } from '@/hooks/useQuotes'
+import { useFxRates } from '@/hooks/useFxRates'
 import { formatCurrency } from '@/lib/utils'
 
 function delta(curr: number, prev: number) {
@@ -26,6 +28,12 @@ export function KpiStrip() {
   const { data } = useCurrentMonthKpis()
   const c = data?.current
   const p = data?.previous
+  const { data: pipeline = [] } = usePipelineQuotes()
+  const { toBRL } = useFxRates()
+  const pipelineBrl = pipeline.reduce(
+    (s, q) => s + (q.total_value_brl ?? toBRL(q.total_value, q.currency, q.fx_to_brl) ?? 0),
+    0,
+  )
 
   return (
     <div className="flex items-center gap-8 px-5 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
@@ -48,9 +56,9 @@ export function KpiStrip() {
       />
       <div className="w-px h-8 bg-gray-200 dark:bg-gray-800" />
       <div className="flex flex-col">
-        <span className="text-xs text-gray-500 dark:text-gray-400">Valor Cotado</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">Valor Cotado (pipeline)</span>
         <span className="text-xl font-semibold tabular-nums">
-          {formatCurrency(c?.total_quoted_usd ?? 0)}
+          {formatCurrency(pipelineBrl, 'BRL')}
         </span>
       </div>
     </div>
