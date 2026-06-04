@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { ThemeProvider } from '@/lib/theme'
 import { Sidebar } from '@/components/Sidebar'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 import { LoginPage } from '@/pages/LoginPage'
 import { InboxPage } from '@/pages/InboxPage'
@@ -24,7 +25,9 @@ function AppShell() {
     <div className="flex h-screen overflow-hidden bg-white dark:bg-gray-950">
       <Sidebar />
       <main className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </div>
   )

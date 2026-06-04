@@ -6,12 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(value: number | null, currency = 'USD'): string {
   if (value == null) return '—'
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
+  // Moeda inválida/vazia derruba o Intl.NumberFormat — cai para USD com segurança.
+  const code = typeof currency === 'string' && /^[a-z]{3}$/i.test(currency) ? currency.toUpperCase() : 'USD'
+  try {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: code,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)
+  } catch {
+    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value)
+  }
 }
 
 export function formatBRL(value: number | null): string {

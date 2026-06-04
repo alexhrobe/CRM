@@ -24,6 +24,13 @@ describe('formatCurrency', () => {
     expect(formatBRL(null)).toBe('—')
     expect(formatBRL(2500)).toMatch(/2\.500/)
   })
+
+  it('não lança com moeda vazia ou inválida (cai para USD)', () => {
+    expect(() => formatCurrency(1000, '')).not.toThrow()
+    expect(() => formatCurrency(1000, 'XYZ123')).not.toThrow()
+    expect(() => formatCurrency(1000, null as unknown as string)).not.toThrow()
+    expect(formatCurrency(1000, '')).toMatch(/1\.000/)
+  })
 })
 
 describe('daysSince', () => {
