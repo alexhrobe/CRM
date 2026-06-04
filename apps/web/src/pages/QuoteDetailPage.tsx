@@ -8,6 +8,7 @@ import { TypeBadge } from '@/components/TypeBadge'
 import { CountryBadge } from '@/components/CountryBadge'
 import { QuoteForm } from '@/components/QuoteForm'
 import { formatCurrency, formatDate, formatBRL, daysSince, STAGE_LABELS, PRODUCT_GROUP_LABELS } from '@/lib/utils'
+import { useFxRates } from '@/hooks/useFxRates'
 import type { QuoteStage, LossReason } from '@crm-plp/shared'
 
 const STAGES = ['received','in_analysis','sent','negotiation','won','lost','stalled'] as QuoteStage[]
@@ -24,6 +25,7 @@ export function QuoteDetailPage() {
   const updateStage = useUpdateQuoteStage()
   const deleteQuote = useDeleteQuote()
   const createOrder = useCreateOrder()
+  const { rateFor, toBRL } = useFxRates()
   const [editing, setEditing] = useState(false)
   const [showLossForm, setShowLossForm] = useState(false)
   const [lossForm, setLossForm] = useState({ reason: 'price' as LossReason, competitor: '', notes: '' })
@@ -61,9 +63,9 @@ export function QuoteDetailPage() {
       po_number: convertForm.po_number || null,
       internal_number: convertForm.internal_number || null,
       status: 'received',
-      total_value: quote.total_value!,
+      total_value: quote.total_value ?? itemsSum,
       currency: quote.currency,
-      fx_to_brl: parseFloat(convertForm.fx_to_brl) || quote.fx_to_brl!,
+      fx_to_brl: parseFloat(convertForm.fx_to_brl) || quote.fx_to_brl || rateFor(quote.currency) || 5,
       received_at: new Date().toISOString(),
       promised_delivery_at: convertForm.promised_delivery_at || null,
     })
@@ -73,6 +75,10 @@ export function QuoteDetailPage() {
   }
 
   const canConvert = quote.stage === 'sent' || quote.stage === 'negotiation'
+  const itemsSum = (quote.items ?? []).reduce(
+    (s: number, it: any) => s + (it.total ?? (it.quantity ?? 0) * (it.unit_price ?? 0)),
+    0,
+  )
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
@@ -135,8 +141,11 @@ export function QuoteDetailPage() {
                 <div>
                   <p className="label">Valor</p>
                   <p className="text-sm font-semibold">{formatCurrency(quote.total_value, quote.currency)}</p>
-                  {quote.total_value && quote.fx_to_brl && (
-                    <p className="text-xs text-gray-400">{formatBRL(quote.total_value * quote.fx_to_brl)}</p>
+                  {toBRL(quote.total_value, quote.currency, quote.fx_to_brl) != null && (
+                    <p className="text-xs text-gray-400">
+                      {formatBRL(toBRL(quote.total_value, quote.currency, quote.fx_to_brl))}
+                      {quote.fx_to_brl == null && <span className="ml-1 text-gray-300">(câmbio atual)</span>}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -230,6 +239,18 @@ export function QuoteDetailPage() {
                         </tr>
                       ))}
                     </tbody>
+                    <tfoot>
+                      <tr className="border-t-2 border-gray-300 dark:border-gray-700 font-semibold">
+                        <td className="py-1.5 px-2" colSpan={4}>Total dos itens</td>
+                        <td className="py-1.5 px-2 text-right">{formatCurrency(itemsSum, quote.currency)}</td>
+                      </tr>
+                      {toBRL(itemsSum, quote.currency, quote.fx_to_brl) != null && (
+                        <tr className="text-gray-400">
+                          <td className="px-2" colSpan={4}>em BRL</td>
+                          <td className="px-2 text-right">{formatBRL(toBRL(itemsSum, quote.currency, quote.fx_to_brl))}</td>
+                        </tr>
+                      )}
+                    </tfoot>
                   </table>
                 </div>
               )}

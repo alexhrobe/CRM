@@ -4,6 +4,7 @@ import { CreateQuoteSchema, type CreateQuote } from '@crm-plp/shared'
 import { useAccounts } from '@/hooks/useAccounts'
 import { useAuth } from '@/lib/auth'
 import { useCreateQuote, useUpdateQuote } from '@/hooks/useQuotes'
+import { useFxRates } from '@/hooks/useFxRates'
 import { PRODUCT_GROUP_LABELS } from '@/lib/utils'
 
 interface Props {
@@ -19,6 +20,7 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
   const { data: accounts = [] } = useAccounts()
   const create = useCreateQuote()
   const update = useUpdateQuote()
+  const { rateFor } = useFxRates()
 
   const isEdit = Boolean(initial?.id)
 
@@ -40,11 +42,14 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
 
   async function onSubmit(values: CreateQuote) {
     if (!user) return
+    // Preenche o câmbio com a taxa vigente se não informado (para a conversão BRL funcionar)
+    const fx = values.fx_to_brl ?? rateFor(values.currency) ?? null
+    const v = { ...values, fx_to_brl: Number.isNaN(values.fx_to_brl as number) ? (rateFor(values.currency) ?? null) : fx }
     if (isEdit && initial?.id) {
-      const result = await update.mutateAsync({ id: initial.id, ...values })
+      const result = await update.mutateAsync({ id: initial.id, ...v })
       onSuccess?.(result.id)
     } else {
-      const result = await create.mutateAsync({ ...values, owner_id: user.id })
+      const result = await create.mutateAsync({ ...v, owner_id: user.id })
       onSuccess?.(result.id)
     }
   }

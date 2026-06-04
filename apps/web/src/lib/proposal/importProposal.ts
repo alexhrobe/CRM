@@ -66,6 +66,15 @@ export async function importProposal(
     }
   }
 
+  // Câmbio vigente para a moeda (para a conversão BRL funcionar de imediato)
+  const { data: fxRows } = await supabase
+    .from('fx_rates')
+    .select('rate_to_brl')
+    .eq('currency', proposal.quote.currency)
+    .order('date', { ascending: false })
+    .limit(1)
+  const fxToBrl = fxRows?.[0]?.rate_to_brl ?? null
+
   // 3. Cotação
   const { data: quote, error: qErr } = await supabase
     .from('quotes')
@@ -77,6 +86,7 @@ export async function importProposal(
       stage: 'received',
       total_value: proposal.quote.total_value,
       currency: proposal.quote.currency,
+      fx_to_brl: fxToBrl,
       product_group: proposal.quote.product_group ?? null,
       product_description: proposal.quote.product_description ?? null,
       received_at: proposal.quote.received_at,

@@ -217,5 +217,13 @@ export const datasets: Record<string, any[]> = {
   quote_items: [],
   monthly_reports: [],
   report_snapshots: [],
-  fx_rates: [],
+  fx_rates: [
+    { id: 'fx-usd', date: today.toISOString().slice(0, 10), currency: 'USD', rate_to_brl: 5.0 },
+    { id: 'fx-eur', date: today.toISOString().slice(0, 10), currency: 'EUR', rate_to_brl: 5.5 },
+    { id: 'fx-ars', date: today.toISOString().slice(0, 10), currency: 'ARS', rate_to_brl: 0.006 },
+    { id: 'fx-clp', date: today.toISOString().slice(0, 10), currency: 'CLP', rate_to_brl: 0.0056 },
+    { id: 'fx-cop', date: today.toISOString().slice(0, 10), currency: 'COP', rate_to_brl: 0.0013 },
+    { id: 'fx-pen', date: today.toISOString().slice(0, 10), currency: 'PEN', rate_to_brl: 1.33 },
+    { id: 'fx-pyg', date: today.toISOString().slice(0, 10), currency: 'PYG', rate_to_brl: 0.0007 },
+  ],
 }

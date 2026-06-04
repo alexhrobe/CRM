@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useOrder, useUpdateOrder, useDeleteOrder } from '@/hooks/useOrders'
 import { ActivityTimeline } from '@/components/ActivityTimeline'
 import { formatCurrency, formatDate, formatBRL } from '@/lib/utils'
+import { useFxRates } from '@/hooks/useFxRates'
 import type { OrderStatus } from '@crm-plp/shared'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -25,6 +26,7 @@ export function OrderDetailPage() {
   const { data: order, isLoading } = useOrder(id!)
   const updateOrder = useUpdateOrder()
   const deleteOrder = useDeleteOrder()
+  const { toBRL } = useFxRates()
   const [editing, setEditing] = useState(false)
 
   if (isLoading) return <div className="flex items-center justify-center h-full text-gray-400">Carregando...</div>
@@ -38,6 +40,11 @@ export function OrderDetailPage() {
       deleteOrder.mutate(id!, { onSuccess: () => navigate('/pedidos') })
     }
   }
+
+  const itemsSum = (order.items ?? []).reduce(
+    (s: number, it: any) => s + (it.total ?? (it.quantity ?? 0) * (it.unit_price ?? 0)),
+    0,
+  )
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
@@ -66,8 +73,8 @@ export function OrderDetailPage() {
           </div>
           <div className="text-right">
             <p className="text-lg font-semibold">{formatCurrency(order.total_value, order.currency)}</p>
-            {order.fx_to_brl && (
-              <p className="text-xs text-gray-400">{formatBRL(order.total_value * order.fx_to_brl)}</p>
+            {toBRL(order.total_value, order.currency, order.fx_to_brl) != null && (
+              <p className="text-xs text-gray-400">{formatBRL(toBRL(order.total_value, order.currency, order.fx_to_brl))}</p>
             )}
           </div>
         </div>
@@ -158,6 +165,12 @@ export function OrderDetailPage() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-gray-300 dark:border-gray-700 font-semibold">
+                    <td className="py-1.5 px-2" colSpan={4}>Total dos itens</td>
+                    <td className="py-1.5 px-2 text-right">{formatCurrency(itemsSum, order.currency)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
