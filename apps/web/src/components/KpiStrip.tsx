@@ -1,5 +1,6 @@
 import { useCurrentMonthKpis } from '@/hooks/useDashboard'
 import { usePipelineQuotes } from '@/hooks/useQuotes'
+import { effectiveProbability } from '@crm-plp/shared'
 import { formatCurrency } from '@/lib/utils'
 
 function delta(curr: number, prev: number) {
@@ -32,6 +33,11 @@ export function KpiStrip() {
     (s, q) => s + (q.total_value_brl ?? 0),
     0,
   )
+  // Forecast: valor × probabilidade efetiva (default por estágio)
+  const weightedBrl = pipeline.reduce(
+    (s, q) => s + ((q.total_value_brl ?? 0) * effectiveProbability(q.stage, q.probability)) / 100,
+    0,
+  )
 
   return (
     <div className="flex items-center gap-8 px-5 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
@@ -57,6 +63,13 @@ export function KpiStrip() {
         <span className="text-xs text-gray-500 dark:text-gray-400">Valor Cotado (pipeline)</span>
         <span className="text-xl font-semibold tabular-nums">
           {formatCurrency(pipelineBrl, 'BRL')}
+        </span>
+      </div>
+      <div className="w-px h-8 bg-gray-200 dark:bg-gray-800" />
+      <div className="flex flex-col" title="Soma de valor × probabilidade efetiva por estágio">
+        <span className="text-xs text-brand-700 dark:text-brand-400">Ponderado (forecast)</span>
+        <span className="text-xl font-semibold tabular-nums text-brand-700 dark:text-brand-400">
+          {formatCurrency(weightedBrl, 'BRL')}
         </span>
       </div>
     </div>

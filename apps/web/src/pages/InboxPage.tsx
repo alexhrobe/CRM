@@ -7,6 +7,7 @@ import { TypeBadge } from '@/components/TypeBadge'
 import { CountryBadge } from '@/components/CountryBadge'
 import { QuoteForm } from '@/components/QuoteForm'
 import { ImportProposalModal } from '@/components/ImportProposalModal'
+import { ListSkeleton } from '@/components/Skeleton'
 import {
   formatCurrency, formatRelativeDate, priorityScore,
   ALERT_SEVERITY_COLORS, PRODUCT_GROUP_LABELS
@@ -192,7 +193,7 @@ export function InboxPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-400">Carregando...</div>
+          <ListSkeleton />
         ) : quotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-3xl">⬡</span>

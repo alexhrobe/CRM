@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useOrders } from '@/hooks/useOrders'
 import { CountryBadge } from '@/components/CountryBadge'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { ListSkeleton } from '@/components/Skeleton'
 
 const STATUS_COLORS: Record<string, string> = {
   received: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
@@ -28,7 +29,7 @@ export function OrdersListPage() {
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-400">Carregando...</div>
+          <ListSkeleton />
         ) : (
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">

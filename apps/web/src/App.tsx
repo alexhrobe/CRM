@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { ThemeProvider } from '@/lib/theme'
 import { Sidebar } from '@/components/Sidebar'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ConfirmProvider } from '@/components/ConfirmProvider'
 
 import { LoginPage } from '@/pages/LoginPage'
 import { InboxPage } from '@/pages/InboxPage'
@@ -83,7 +85,10 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router />
+        <ConfirmProvider>
+          <Router />
+          <Toaster position="bottom-right" richColors closeButton />
+        </ConfirmProvider>
       </AuthProvider>
     </ThemeProvider>
   )

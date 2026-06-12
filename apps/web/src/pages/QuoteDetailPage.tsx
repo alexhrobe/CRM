@@ -10,6 +10,7 @@ import { CountryBadge } from '@/components/CountryBadge'
 import { QuoteForm } from '@/components/QuoteForm'
 import { formatCurrency, formatDate, formatBRL, daysSince, STAGE_LABELS, PRODUCT_GROUP_LABELS } from '@/lib/utils'
 import { useFxRates } from '@/hooks/useFxRates'
+import { useConfirm } from '@/components/ConfirmProvider'
 import type { QuoteStage, LossReason } from '@crm-plp/shared'
 
 const STAGES = ['received','in_analysis','sent','negotiation','won','lost','stalled'] as QuoteStage[]
@@ -27,6 +28,7 @@ export function QuoteDetailPage() {
   const deleteQuote = useDeleteQuote()
   const createOrder = useCreateOrder()
   const { rateFor, toBRL } = useFxRates()
+  const confirmDialog = useConfirm()
   const [editing, setEditing] = useState(false)
   const [showLossForm, setShowLossForm] = useState(false)
   const [lossForm, setLossForm] = useState({ reason: 'price' as LossReason, competitor: '', notes: '' })
@@ -118,7 +120,14 @@ export function QuoteDetailPage() {
               {editing ? 'Cancelar' : 'Editar'}
             </button>
             <button
-              onClick={() => { if (quote && confirm(`Excluir a cotação ${quote.quote_number}? Esta ação não pode ser desfeita.`)) deleteQuote.mutate(quote.id, { onSuccess: () => navigate('/') }) }}
+              onClick={async () => {
+                if (!quote) return
+                const ok = await confirmDialog({
+                  title: `Excluir a cotação ${quote.quote_number}?`,
+                  description: 'Esta ação não pode ser desfeita.',
+                })
+                if (ok) deleteQuote.mutate(quote.id, { onSuccess: () => navigate('/') })
+              }}
               className="btn-danger text-xs"
             >
               Excluir

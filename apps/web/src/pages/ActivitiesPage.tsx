@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { formatDate, formatRelativeDate } from '@/lib/utils'
 import { useDeleteActivity, useDeleteActivities } from '@/hooks/useActivities'
+import { useConfirm } from '@/components/ConfirmProvider'
+import { ListSkeleton } from '@/components/Skeleton'
 
 const KIND_LABELS: Record<string, string> = {
   call: '📞 Ligação', email_sent: '📤 Email enviado', email_received: '📥 Email recebido',
@@ -15,6 +17,7 @@ export function ActivitiesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const deleteActivity = useDeleteActivity()
   const deleteActivities = useDeleteActivities()
+  const confirmDialog = useConfirm()
 
   const { data: activities = [], isLoading } = useQuery({
     queryKey: ['activities', 'all'],
@@ -50,7 +53,7 @@ export function ActivitiesPage() {
   }
 
   async function removeOne(id: string) {
-    if (!confirm('Excluir esta atividade?')) return
+    if (!(await confirmDialog({ title: 'Excluir esta atividade?' }))) return
     await deleteActivity.mutateAsync(id)
     setSelectedIds(prev => {
       const next = new Set(prev)
@@ -62,10 +65,11 @@ export function ActivitiesPage() {
   async function removeSelected() {
     const ids = [...selectedIds]
     if (ids.length === 0) return
-    const msg = ids.length === 1
-      ? 'Excluir esta atividade?'
-      : `Excluir ${ids.length} atividades? Esta ação não pode ser desfeita.`
-    if (!confirm(msg)) return
+    const ok = await confirmDialog({
+      title: ids.length === 1 ? 'Excluir esta atividade?' : `Excluir ${ids.length} atividades?`,
+      description: 'Esta ação não pode ser desfeita.',
+    })
+    if (!ok) return
     await deleteActivities.mutateAsync(ids)
     setSelectedIds(new Set())
   }
@@ -104,7 +108,7 @@ export function ActivitiesPage() {
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-400">Carregando...</div>
+          <ListSkeleton />
         ) : activities.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Nenhuma atividade registrada</div>
         ) : (

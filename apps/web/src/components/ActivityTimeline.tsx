@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useActivities, useCreateActivity, useUpdateActivity, useDeleteActivity } from '@/hooks/useActivities'
+import { useConfirm } from '@/components/ConfirmProvider'
 import { useAuth } from '@/lib/auth'
 import { formatRelativeDate, formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -27,6 +29,7 @@ export function ActivityTimeline({ quoteId, accountId, orderId }: Props) {
   const createActivity = useCreateActivity()
   const updateActivity = useUpdateActivity()
   const deleteActivity = useDeleteActivity()
+  const confirmDialog = useConfirm()
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState({ kind: 'note' as ActivityKind, title: '', body: '' })
@@ -121,8 +124,14 @@ export function ActivityTimeline({ quoteId, accountId, orderId }: Props) {
                 <span className="text-xs font-medium">{KIND_LABELS[act.kind] ?? act.kind}</span>
                 <div className="flex items-center gap-1 shrink-0">
                   <span className="text-xs text-gray-400" title={formatDate(act.occurred_at)}>{formatRelativeDate(act.occurred_at)}</span>
-                  <button onClick={() => startEdit(act)} className="text-xs text-gray-300 hover:text-gray-700 dark:hover:text-gray-200" title="Editar">✏️</button>
-                  <button onClick={() => { if (confirm('Excluir esta atividade?')) deleteActivity.mutate(act.id) }} className="text-xs text-gray-300 hover:text-red-600" title="Excluir">🗑️</button>
+                  <button onClick={() => startEdit(act)} className="p-0.5 text-gray-300 hover:text-gray-700 dark:hover:text-gray-200" title="Editar"><Pencil size={12} /></button>
+                  <button
+                    onClick={async () => {
+                      if (await confirmDialog({ title: 'Excluir esta atividade?' })) deleteActivity.mutate(act.id)
+                    }}
+                    className="p-0.5 text-gray-300 hover:text-red-600"
+                    title="Excluir"
+                  ><Trash2 size={12} /></button>
                 </div>
               </div>
               {act.title && <p className="text-sm mt-0.5">{act.title}</p>}

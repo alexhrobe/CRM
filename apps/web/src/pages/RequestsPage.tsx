@@ -2,6 +2,8 @@ import { useState, type ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { QuoteRequestWithAccount, RequestStatus } from '@crm-plp/shared'
 import { useQuoteRequests, useCreateQuoteRequest, useUpdateQuoteRequest, useDeleteQuoteRequest } from '@/hooks/useQuoteRequests'
+import { useConfirm } from '@/components/ConfirmProvider'
+import { ListSkeleton } from '@/components/Skeleton'
 import { useAccounts } from '@/hooks/useAccounts'
 import { QuoteForm } from '@/components/QuoteForm'
 import { CountryBadge } from '@/components/CountryBadge'
@@ -17,6 +19,7 @@ export function RequestsPage() {
   const { data: requests = [], isLoading } = useQuoteRequests(filter)
   const update = useUpdateQuoteRequest()
   const del = useDeleteQuoteRequest()
+  const confirmDialog = useConfirm()
   const navigate = useNavigate()
 
   return (
@@ -51,7 +54,7 @@ export function RequestsPage() {
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-400">Carregando…</div>
+          <ListSkeleton />
         ) : requests.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
             <span className="text-3xl">📨</span>
@@ -98,7 +101,9 @@ export function RequestsPage() {
                   </button>
                 )}
                 <button
-                  onClick={() => { if (confirm('Excluir esta solicitação? Esta ação não pode ser desfeita.')) del.mutate(r.id) }}
+                  onClick={async () => {
+                    if (await confirmDialog({ title: 'Excluir esta solicitação?', description: 'Esta ação não pode ser desfeita.' })) del.mutate(r.id)
+                  }}
                   className="btn-ghost text-xs text-gray-400 hover:text-red-600"
                 >
                   Excluir

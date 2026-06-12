@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useContacts, useDeleteContact } from '@/hooks/useContacts'
 import { ContactForm, type ContactRecord } from '@/components/ContactForm'
 import { CountryBadge } from '@/components/CountryBadge'
+import { useConfirm } from '@/components/ConfirmProvider'
+import { ListSkeleton } from '@/components/Skeleton'
 
 export function ContactsPage() {
   const navigate = useNavigate()
   const { data: contacts = [], isLoading } = useContacts()
   const del = useDeleteContact()
+  const confirm = useConfirm()
   const [form, setForm] = useState<ContactRecord | null | undefined>(undefined) // undefined=closed, null=new, record=edit
 
   return (
@@ -21,7 +25,7 @@ export function ContactsPage() {
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-400">Carregando...</div>
+          <ListSkeleton />
         ) : (
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
@@ -43,8 +47,14 @@ export function ContactsPage() {
                   </td>
                   <td className="px-4 py-2.5"><CountryBadge iso2={c.account?.country_iso2} country={c.account?.country} /></td>
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                    <button onClick={() => setForm(c)} className="text-xs text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-1.5" title="Editar">✏️</button>
-                    <button onClick={() => { if (confirm(`Excluir o contato "${c.name}"?`)) del.mutate(c.id) }} className="text-xs text-gray-400 hover:text-red-600 px-1.5" title="Excluir">🗑️</button>
+                    <button onClick={() => setForm(c)} className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100" title="Editar"><Pencil size={14} /></button>
+                    <button
+                      onClick={async () => {
+                        if (await confirm({ title: `Excluir o contato "${c.name}"?` })) del.mutate(c.id)
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-red-600"
+                      title="Excluir"
+                    ><Trash2 size={14} /></button>
                   </td>
                 </tr>
               ))}

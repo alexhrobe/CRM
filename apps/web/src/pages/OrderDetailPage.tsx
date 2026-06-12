@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOrder, useUpdateOrder, useDeleteOrder } from '@/hooks/useOrders'
 import { ActivityTimeline } from '@/components/ActivityTimeline'
+import { useConfirm } from '@/components/ConfirmProvider'
 import { formatCurrency, formatDate, formatBRL } from '@/lib/utils'
 import { useFxRates } from '@/hooks/useFxRates'
 import type { OrderStatus } from '@crm-plp/shared'
@@ -27,6 +28,7 @@ export function OrderDetailPage() {
   const updateOrder = useUpdateOrder()
   const deleteOrder = useDeleteOrder()
   const { toBRL } = useFxRates()
+  const confirmDialog = useConfirm()
   const [editing, setEditing] = useState(false)
 
   if (isLoading) return <div className="flex items-center justify-center h-full text-gray-400">Carregando...</div>
@@ -35,10 +37,12 @@ export function OrderDetailPage() {
   async function handleStatusChange(status: OrderStatus) {
     await updateOrder.mutateAsync({ id: id!, status })
   }
-  function removeOrder() {
-    if (confirm('Excluir este pedido? Esta ação não pode ser desfeita.')) {
-      deleteOrder.mutate(id!, { onSuccess: () => navigate('/pedidos') })
-    }
+  async function removeOrder() {
+    const ok = await confirmDialog({
+      title: 'Excluir este pedido?',
+      description: 'Esta ação não pode ser desfeita.',
+    })
+    if (ok) deleteOrder.mutate(id!, { onSuccess: () => navigate('/pedidos') })
   }
 
   const itemsSum = (order.items ?? []).reduce(

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAllQuotes } from '@/hooks/useQuotes'
 import { useFxRates } from '@/hooks/useFxRates'
 import { KpiStrip } from '@/components/KpiStrip'
+import { ListSkeleton } from '@/components/Skeleton'
 import { StageBadge } from '@/components/StageBadge'
 import { TypeBadge } from '@/components/TypeBadge'
 import { CountryBadge } from '@/components/CountryBadge'
@@ -144,7 +145,7 @@ export function TablePage() {
 
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-400">Carregando...</div>
+          <ListSkeleton />
         ) : (
           <table className="w-full text-sm border-collapse">
             <thead className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 z-10">

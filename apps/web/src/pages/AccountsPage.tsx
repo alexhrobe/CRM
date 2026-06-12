@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Pencil, Trash2 } from 'lucide-react'
+import { useConfirm } from '@/components/ConfirmProvider'
+import { ListSkeleton } from '@/components/Skeleton'
 import { useAccounts, useAccount, useDeleteAccount } from '@/hooks/useAccounts'
 import { useDeleteContact } from '@/hooks/useContacts'
 import { AccountForm, ACCOUNT_TYPE_LABELS } from '@/components/AccountForm'
@@ -14,6 +17,7 @@ export function AccountsListPage() {
   const navigate = useNavigate()
   const { data: accounts = [], isLoading } = useAccounts()
   const del = useDeleteAccount()
+  const confirmDialog = useConfirm()
   const [search, setSearch] = useState('')
   const [formAccount, setFormAccount] = useState<Partial<Account> & { id?: string } | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -25,8 +29,12 @@ export function AccountsListPage() {
       a.country.toLowerCase().includes(search.toLowerCase()),
   )
 
-  function remove(a: Account) {
-    if (confirm(`Excluir a conta "${a.legal_name}"? Esta ação não pode ser desfeita.`)) del.mutate(a.id)
+  async function remove(a: Account) {
+    const ok = await confirmDialog({
+      title: `Excluir a conta "${a.legal_name}"?`,
+      description: 'Esta ação não pode ser desfeita.',
+    })
+    if (ok) del.mutate(a.id)
   }
 
   return (
@@ -49,7 +57,7 @@ export function AccountsListPage() {
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <div className="flex items-center justify-center h-32 text-gray-400">Carregando...</div>
+          <ListSkeleton />
         ) : (
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800">
@@ -68,8 +76,8 @@ export function AccountsListPage() {
                   <td className="px-4 py-2.5 text-xs text-gray-500">{a.currency_default}</td>
                   <td className="px-4 py-2.5 text-xs text-gray-500">{a.segment ?? '—'}</td>
                   <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                    <button onClick={(e) => { e.stopPropagation(); setFormAccount(a); setShowForm(true) }} className="text-xs text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 px-1.5" title="Editar">✏️</button>
-                    <button onClick={(e) => { e.stopPropagation(); remove(a) }} className="text-xs text-gray-400 hover:text-red-600 px-1.5" title="Excluir">🗑️</button>
+                    <button onClick={(e) => { e.stopPropagation(); setFormAccount(a); setShowForm(true) }} className="p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100" title="Editar"><Pencil size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); remove(a) }} className="p-1.5 text-gray-400 hover:text-red-600" title="Excluir"><Trash2 size={14} /></button>
                   </td>
                 </tr>
               ))}
@@ -87,6 +95,7 @@ export function AccountDetailPage() {
   const { data: account, isLoading } = useAccount(id!)
   const del = useDeleteAccount()
   const delContact = useDeleteContact()
+  const confirmDialog = useConfirm()
   const [tab, setTab] = useState<'quotes' | 'orders' | 'activity'>('quotes')
   const [editing, setEditing] = useState(false)
   const [contactForm, setContactForm] = useState<ContactRecord | null | undefined>(undefined) // undefined=closed, null=new, record=edit
@@ -94,11 +103,13 @@ export function AccountDetailPage() {
   if (isLoading) return <div className="flex items-center justify-center h-full text-gray-400">Carregando...</div>
   if (!account) return <div className="flex items-center justify-center h-full text-gray-400">Conta não encontrada</div>
 
-  function removeAccount() {
+  async function removeAccount() {
     if (!account) return
-    if (confirm(`Excluir a conta "${account.legal_name}" e seus vínculos? Esta ação não pode ser desfeita.`)) {
-      del.mutate(account.id, { onSuccess: () => navigate('/contas') })
-    }
+    const ok = await confirmDialog({
+      title: `Excluir a conta "${account.legal_name}"?`,
+      description: 'Os vínculos (contatos, histórico) serão removidos. Esta ação não pode ser desfeita.',
+    })
+    if (ok) del.mutate(account.id, { onSuccess: () => navigate('/contas') })
   }
 
   return (
@@ -137,8 +148,14 @@ export function AccountDetailPage() {
               {c.role && <span className="text-gray-500 text-xs">· {c.role}</span>}
               {c.email && <span className="text-gray-400 text-xs">{c.email}</span>}
               {c.phone && <span className="text-gray-400 text-xs">{c.phone}</span>}
-              <button onClick={() => setContactForm(c)} className="text-xs text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 ml-1" title="Editar">✏️</button>
-              <button onClick={() => { if (confirm(`Excluir o contato "${c.name}"?`)) delContact.mutate(c.id) }} className="text-xs text-gray-400 hover:text-red-600" title="Excluir">🗑️</button>
+              <button onClick={() => setContactForm(c)} className="p-1 text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 ml-1" title="Editar"><Pencil size={13} /></button>
+              <button
+                onClick={async () => {
+                  if (await confirmDialog({ title: `Excluir o contato "${c.name}"?` })) delContact.mutate(c.id)
+                }}
+                className="p-1 text-gray-400 hover:text-red-600"
+                title="Excluir"
+              ><Trash2 size={13} /></button>
             </div>
           ))}
           {(!account.contacts || account.contacts.length === 0) && <p className="text-xs text-gray-400">Nenhum contato.</p>}
