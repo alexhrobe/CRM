@@ -11,7 +11,7 @@ async function makeWorkbook(): Promise<ArrayBuffer> {
   ws.addRow(['País:', 'Chile'])
   ws.addRow(['Contato:', 'María González'])
   ws.addRow(['E-mail:', 'maria@elecnor.cl'])
-  ws.addRow(['Proposta Nº:', 'PLP-2025-0420'])
+  ws.addRow(['Proposta Nº:', 'EXP-2025-0420'])
   ws.addRow(['Moeda:', 'USD'])
   ws.addRow(['Data:', new Date('2025-03-10T12:00:00Z')])
   ws.addRow([])
@@ -32,7 +32,7 @@ describe('parseProposalBuffer', () => {
     expect(p.account.country_iso2).toBe('CL') // inferido do nome do país
     expect(p.contact?.name).toBe('María González')
     expect(p.contact?.email).toBe('maria@elecnor.cl')
-    expect(p.quote.quote_number).toBe('PLP-2025-0420')
+    expect(p.quote.quote_number).toBe('EXP-2025-0420')
     expect(p.quote.currency).toBe('USD')
     expect(p.quote.product_group).toBe('opgw_fibra') // inferido da descrição
     expect(p.items).toHaveLength(2)
@@ -40,7 +40,7 @@ describe('parseProposalBuffer', () => {
     expect(p.quote.total_value).toBe(16500) // linha de TOTAL da tabela
   })
 
-  it('entende o modelo comercial da PLP (espanhol, cliente posicional, numeração)', async () => {
+  it('entende o modelo comercial de exportação (espanhol, cliente posicional, numeração)', async () => {
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Proposta')
     ws.getCell('C4').value = 'PROPUESTA COMERCIAL'
@@ -56,7 +56,7 @@ describe('parseProposalBuffer', () => {
     ws.getCell('D12').value = 'Su solicitud E-mail, de 02/06/2026'
     ws.getCell('C16').value = '1. Planilla de precios'
     ws.getCell('C18').value = 'Ítem'
-    ws.getCell('D18').value = 'Referencia PLP'
+    ws.getCell('D18').value = 'Referencia'
     ws.getCell('E18').value = 'Descripción'
     ws.getCell('F18').value = 'Un'
     ws.getCell('G18').value = 'Cantidad'

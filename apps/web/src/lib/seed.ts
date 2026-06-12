@@ -1,5 +1,5 @@
 /**
- * Seed script for CRM PLP Export
+ * Seed script for CRM Export
  * Run: pnpm seed (requires VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local)
  */
 import { createClient } from '@supabase/supabase-js'
@@ -19,36 +19,36 @@ const db = createClient(supabaseUrl, serviceRoleKey, {
 // ─── Data definitions ─────────────────────────────────────────────────────────
 
 const ACCOUNTS = [
-  { legal_name: 'ELECNOR Argentina S.A.', country: 'Argentina', country_iso2: 'AR', account_type: 'direct_customer', currency_default: 'USD', segment: 'EPC' },
-  { legal_name: 'YPF Energia Eléctrica', country: 'Argentina', country_iso2: 'AR', account_type: 'direct_customer', currency_default: 'USD', segment: 'Oil & Gas' },
-  { legal_name: 'Isolux Corsán Argentina', country: 'Argentina', country_iso2: 'AR', account_type: 'distributor', currency_default: 'USD', segment: 'EPC' },
+  { legal_name: 'ELECNOR S.A.', country: 'Argentina', country_iso2: 'AR', account_type: 'direct_customer', currency_default: 'USD', segment: 'EPC' },
+  { legal_name: 'YPF Luz', country: 'Argentina', country_iso2: 'AR', account_type: 'direct_customer', currency_default: 'USD', segment: 'Outros' },
+  { legal_name: 'Isolux Corsán', country: 'Argentina', country_iso2: 'AR', account_type: 'distributor', currency_default: 'USD', segment: 'EPC' },
   { legal_name: 'EDESUR', country: 'Argentina', country_iso2: 'AR', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
   { legal_name: 'Transnea S.A.', country: 'Argentina', country_iso2: 'AR', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
-  { legal_name: 'CPPE Chile', country: 'Chile', country_iso2: 'CL', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
-  { legal_name: 'Transelec Chile', country: 'Chile', country_iso2: 'CL', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
+  { legal_name: 'CPPE', country: 'Chile', country_iso2: 'CL', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
+  { legal_name: 'Transelec', country: 'Chile', country_iso2: 'CL', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
   { legal_name: 'AES Gener', country: 'Chile', country_iso2: 'CL', account_type: 'direct_customer', currency_default: 'USD', segment: 'Generation' },
   { legal_name: 'SAESA Group', country: 'Chile', country_iso2: 'CL', account_type: 'distributor', currency_default: 'USD', segment: 'Distribution' },
-  { legal_name: 'ISA TRANSCHILE', country: 'Chile', country_iso2: 'CL', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
+  { legal_name: 'ISA Transchile', country: 'Chile', country_iso2: 'CL', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
   { legal_name: 'ISA Colombia', country: 'Colômbia', country_iso2: 'CO', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
-  { legal_name: 'Ecopetrol S.A.', country: 'Colômbia', country_iso2: 'CO', account_type: 'direct_customer', currency_default: 'USD', segment: 'Oil & Gas' },
-  { legal_name: 'Celsia Colombia', country: 'Colômbia', country_iso2: 'CO', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
-  { legal_name: 'OMEGA Peru', country: 'Peru', country_iso2: 'PE', account_type: 'direct_customer', currency_default: 'USD', segment: 'EPC' },
-  { legal_name: 'REP Peru', country: 'Peru', country_iso2: 'PE', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
-  { legal_name: 'ENOSA Peru', country: 'Peru', country_iso2: 'PE', account_type: 'direct_customer', currency_default: 'USD', segment: 'Distribution' },
-  { legal_name: 'ANDE Paraguay', country: 'Paraguai', country_iso2: 'PY', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
+  { legal_name: 'Ecopetrol S.A.', country: 'Colômbia', country_iso2: 'CO', account_type: 'direct_customer', currency_default: 'USD', segment: 'Outros' },
+  { legal_name: 'Celsia', country: 'Colômbia', country_iso2: 'CO', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
+  { legal_name: 'OMEGA', country: 'Peru', country_iso2: 'PE', account_type: 'direct_customer', currency_default: 'USD', segment: 'EPC' },
+  { legal_name: 'REP', country: 'Peru', country_iso2: 'PE', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
+  { legal_name: 'ENOSA', country: 'Peru', country_iso2: 'PE', account_type: 'direct_customer', currency_default: 'USD', segment: 'Distribution' },
+  { legal_name: 'ANDE', country: 'Paraguai', country_iso2: 'PY', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
   { legal_name: 'Copaco S.A.', country: 'Paraguai', country_iso2: 'PY', account_type: 'direct_customer', currency_default: 'USD', segment: 'Telecom' },
-  { legal_name: 'UTE Uruguay', country: 'Uruguai', country_iso2: 'UY', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
-  { legal_name: 'CFE Mexico', country: 'México', country_iso2: 'MX', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
-  { legal_name: 'IEnova Mexico', country: 'México', country_iso2: 'MX', account_type: 'direct_customer', currency_default: 'USD', segment: 'Midstream' },
-  { legal_name: 'PLP Co. USA', country: 'EUA', country_iso2: 'US', account_type: 'subsidiary', currency_default: 'USD', segment: 'Hardware' },
-  { legal_name: 'Preformed Line Products Iberia', country: 'Espanha', country_iso2: 'ES', account_type: 'subsidiary', currency_default: 'EUR', segment: 'Hardware' },
-  { legal_name: 'Red Eléctrica de España', country: 'Espanha', country_iso2: 'ES', account_type: 'direct_customer', currency_default: 'EUR', segment: 'Transmission' },
-  { legal_name: 'PGE Dystrybucja Poland', country: 'Polônia', country_iso2: 'PL', account_type: 'direct_customer', currency_default: 'EUR', segment: 'Distribution' },
-  { legal_name: 'ENEA Operator Poland', country: 'Polônia', country_iso2: 'PL', account_type: 'direct_customer', currency_default: 'EUR', segment: 'Distribution' },
-  { legal_name: 'PEA Thailand', country: 'Tailândia', country_iso2: 'TH', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
-  { legal_name: 'EGAT Thailand', country: 'Tailândia', country_iso2: 'TH', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
+  { legal_name: 'UTE', country: 'Uruguai', country_iso2: 'UY', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
+  { legal_name: 'CFE', country: 'México', country_iso2: 'MX', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
+  { legal_name: 'IEnova', country: 'México', country_iso2: 'MX', account_type: 'direct_customer', currency_default: 'USD', segment: 'Outros' },
+  { legal_name: 'Export Co.', country: 'Estados Unidos', country_iso2: 'US', account_type: 'subsidiary', currency_default: 'USD', segment: 'Outros' },
+  { legal_name: 'Export Iberia', country: 'Espanha', country_iso2: 'ES', account_type: 'subsidiary', currency_default: 'EUR', segment: 'Outros' },
+  { legal_name: 'Red Eléctrica', country: 'Espanha', country_iso2: 'ES', account_type: 'direct_customer', currency_default: 'EUR', segment: 'Transmission' },
+  { legal_name: 'PGE Dystrybucja', country: 'Polônia', country_iso2: 'PL', account_type: 'direct_customer', currency_default: 'EUR', segment: 'Distribution' },
+  { legal_name: 'ENEA Operator', country: 'Polônia', country_iso2: 'PL', account_type: 'direct_customer', currency_default: 'EUR', segment: 'Distribution' },
+  { legal_name: 'PEA', country: 'Tailândia', country_iso2: 'TH', account_type: 'direct_customer', currency_default: 'USD', segment: 'Utility' },
+  { legal_name: 'EGAT', country: 'Tailândia', country_iso2: 'TH', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
   { legal_name: 'ISA Bolivia', country: 'Bolívia', country_iso2: 'BO', account_type: 'direct_customer', currency_default: 'USD', segment: 'Transmission' },
-  { legal_name: 'Distribuidora Electrica Ecuador', country: 'Equador', country_iso2: 'EC', account_type: 'representative', currency_default: 'USD', segment: 'Distribution' },
+  { legal_name: 'Distribuidora Eléctrica', country: 'Equador', country_iso2: 'EC', account_type: 'representative', currency_default: 'USD', segment: 'Distribution' },
 ]
 
 const PRODUCT_GROUPS = ['preformados','cadeias','svd_amortecedor','opgw_fibra','cruzeta','ferragens','isoladores','conectores','outros']
@@ -91,10 +91,10 @@ async function seed() {
   } else {
     // Create via auth
     const { data: authData, error: authError } = await db.auth.admin.createUser({
-      email: 'owner@plpbrasil.com',
-      password: 'PLP@2024!',
+      email: 'owner@crmexport.local',
+      password: 'Export@2024!',
       email_confirm: true,
-      user_metadata: { name: 'Admin PLP', role: 'owner' },
+      user_metadata: { name: 'Admin CRM Export', role: 'owner' },
     })
     if (authError) {
       console.error('Erro ao criar usuário:', authError.message)
@@ -102,7 +102,7 @@ async function seed() {
     }
     seedUserId = authData.user.id
     // Ensure profile exists
-    await db.from('users').upsert({ id: seedUserId, name: 'Admin PLP', role: 'owner' })
+    await db.from('users').upsert({ id: seedUserId, name: 'Admin CRM Export', role: 'owner' })
     console.log('  → Usuário criado:', seedUserId)
   }
 
@@ -175,7 +175,7 @@ async function seed() {
     return {
       account_id: account.id,
       owner_id: seedUserId,
-      quote_number: `PLP-${new Date().getFullYear()}-${String(i + 1).padStart(4, '0')}`,
+      quote_number: `EXP-${new Date().getFullYear()}-${String(i + 1).padStart(4, '0')}`,
       quote_type: random(['competitive', 'competitive', 'reposition']) as any,
       stage,
       total_value: value,
@@ -208,7 +208,7 @@ async function seed() {
       const unit = randomFloat(10, 500, 4)
       return {
         quote_id: q.id,
-        product_code: `PLP-${randomInt(1000,9999)}`,
+        product_code: `EXP-${randomInt(1000,9999)}`,
         description: random(PRODUCT_DESCRIPTIONS[q.product_group ?? 'outros'] ?? ['Item']),
         quantity: qty,
         unit_price: unit,
@@ -289,7 +289,7 @@ async function seed() {
       title: 'Proposta de alto valor sem resposta há 9 dias',
       body: `${accounts![0].legal_name} não respondeu proposta de USD 650k enviada há 9 dias.`,
       suggested_action: 'Ligar para Carlos Mendoza diretamente.',
-      suggested_prompt: `Follow-up urgente com ${accounts![0].legal_name} sobre proposta PLP-${new Date().getFullYear()}-0001. Ligar hoje.`,
+      suggested_prompt: `Follow-up urgente com ${accounts![0].legal_name} sobre proposta EXP-${new Date().getFullYear()}-0001. Ligar hoje.`,
       expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
     },
     {
@@ -344,7 +344,7 @@ async function seed() {
   console.log(`  • ${quotes!.length} quotes`)
   console.log(`  • ${orders!.length} orders`)
   console.log(`  • 5 brain_alerts`)
-  console.log('\n📧 Login: owner@plpbrasil.com / PLP@2024!')
+  console.log('\n📧 Login: owner@crmexport.local / Export@2024!')
 }
 
 seed().catch(e => { console.error(e); process.exit(1) })

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { effectiveProbability } from '@crm-plp/shared'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuote, useUpdateQuoteStage, useDeleteQuote } from '@/hooks/useQuotes'
 import { useCreateOrder } from '@/hooks/useOrders'
@@ -91,11 +92,12 @@ export function QuoteDetailPage() {
               <h1 className="text-lg font-semibold">{quote.quote_number}</h1>
               <StageBadge stage={quote.stage} />
               <TypeBadge type={quote.quote_type} />
-              {quote.probability != null && (
-                <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-400">
-                  {quote.probability}% prob.
-                </span>
-              )}
+              <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full text-gray-600 dark:text-gray-400">
+                {effectiveProbability(quote.stage, quote.probability)}% prob.
+                {quote.probability == null && (
+                  <span className="text-gray-400"> (estágio)</span>
+                )}
+              </span>
             </div>
             <div className="flex items-center gap-3 mt-1">
               <button onClick={() => navigate(`/contas/${quote.account_id}`)} className="text-sm font-medium hover:underline">
@@ -244,7 +246,10 @@ export function QuoteDetailPage() {
                       {toBRL(itemsSum, quote.currency, quote.fx_to_brl) != null && (
                         <tr className="text-gray-400">
                           <td className="px-2" colSpan={4}>em BRL</td>
-                          <td className="px-2 text-right">{formatBRL(toBRL(itemsSum, quote.currency, quote.fx_to_brl))}</td>
+                          <td className="px-2 text-right">
+                            {formatBRL(toBRL(itemsSum, quote.currency, quote.fx_to_brl))}
+                            {quote.fx_to_brl == null && <span className="ml-1 text-gray-300">(câmbio atual)</span>}
+                          </td>
                         </tr>
                       )}
                     </tfoot>

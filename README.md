@@ -1,6 +1,6 @@
-# CRM PLP Export
+# CRM Export
 
-Sistema de gestão de cotações e pedidos de exportação da PLP Brasil.
+Sistema de gestão de cotações e pedidos de exportação.
 
 > **📐 Arquitetura:** ver [ARCHITECTURE.md](ARCHITECTURE.md) (diagramas) e os
 > [ADRs](docs/adr/) (decisões registradas).
@@ -10,11 +10,6 @@ Sistema de gestão de cotações e pedidos de exportação da PLP Brasil.
 >
 > **🔒 Segurança:** modelo de ameaça, RLS por papel e auditoria em
 > [SECURITY.md](SECURITY.md).
->
-> **🧪 Modo demo:** sem credenciais Supabase (ou com `VITE_DEMO=1`), o app sobe
-> com um cliente em memória e dados fictícios realistas — 100% navegável sem
-> backend. Ideal para demonstração/deploy de preview. Com credenciais reais,
-> usa o backend normalmente.
 >
 > **📥 Importar proposta (Excel):** no Inbox, "Importar proposta" lê um `.xlsx`
 > em memória (não armazena), extrai cliente/contato/itens e cria a cotação no
@@ -100,8 +95,8 @@ Acessa em `http://localhost:5173`.
 1. Abra `http://localhost:54323` (Studio)
 2. Vá em **Authentication → Users → Add user**
 3. Crie dois usuários:
-   - `owner@plpbrasil.com` — senha forte — metadata: `{"name": "Admin PLP", "role": "owner"}`
-   - `assistente@plpbrasil.com` — senha forte — metadata: `{"name": "Assistente", "role": "assistant"}`
+   - `owner@crmexport.local` — senha forte — metadata: `{"name": "Admin CRM Export", "role": "owner"}`
+   - `assistente@crmexport.local` — senha forte — metadata: `{"name": "Assistente", "role": "assistant"}`
 
 ### Via CLI (script seed — faz isso automaticamente)
 
@@ -128,8 +123,8 @@ pnpm seed
 
 **Credenciais criadas pelo seed:**
 ```
-Email:    owner@plpbrasil.com
-Senha:    PLP@2024!
+Email:    owner@crmexport.local
+Senha:    Export@2024!
 ```
 
 ---
@@ -229,7 +224,7 @@ curl -X POST \
   -d '{"period": "2024-05"}'
 ```
 
-O relatório ficará disponível em `/r/plp-2024-05` (rota pública, sem login).
+O relatório ficará disponível em `/r/export-2024-05` (rota pública, sem login).
 
 ---
 

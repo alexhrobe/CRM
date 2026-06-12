@@ -1,30 +1,24 @@
-import Anthropic from 'npm:@anthropic-ai/sdk'
-import { createClient } from 'npm:@supabase/supabase-js'
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-)
-
-const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
+import { serviceClient as supabase, getAuthedUser } from '../_shared/auth.ts'
+import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
+import { buildFxCache, valueToBrl } from '../_shared/fx.ts'
 
 Deno.serve(async (req) => {
-  const { period } = await req.json() // e.g. '2024-05'
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  const user = await getAuthedUser(req)
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401)
+  if (user.role !== 'owner') return jsonResponse({ error: 'Forbidden: requires owner role' }, 403)
+
+  const { period } = await req.json()
 
   if (!period || !/^\d{4}-\d{2}$/.test(period)) {
-    return new Response(JSON.stringify({ error: 'period must be YYYY-MM' }), { status: 400 })
+    return jsonResponse({ error: 'period must be YYYY-MM' }, 400)
   }
-
-  // Get calling user
-  const authHeader = req.headers.get('Authorization')
-  const { data: { user } } = await supabase.auth.getUser(authHeader?.replace('Bearer ', '') ?? '')
-  if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
 
   const [year, month] = period.split('-')
   const periodStart = `${period}-01`
-  const periodEnd = `${period}-${new Date(+year, +month, 0).getDate()}`
-
-  // ─── KPIs ─────────────────────────────────────────────────────────────────
+  const periodEnd = `${period}-${String(new Date(+year, +month, 0).getDate()).padStart(2, '0')}`
+  const fxAsOf = periodEnd
 
   const { data: quotes } = await supabase
     .from('quotes')
@@ -44,10 +38,17 @@ Deno.serve(async (req) => {
     .gte('received_at', `${periodStart}T00:00:00Z`)
     .lte('received_at', `${periodEnd}T23:59:59Z`)
 
-  const totalQuotedBRL = (quotes ?? []).reduce((s, q) =>
-    s + (q.total_value ?? 0) * (q.fx_to_brl ?? 5), 0)
-  const totalOrdersBRL = (orders ?? []).reduce((s, o) =>
-    s + (o.total_value ?? 0) * (o.fx_to_brl ?? 5), 0)
+  const allCurrencies = [
+    ...(quotes ?? []).map((q) => q.currency),
+    ...(orders ?? []).map((o) => o.currency),
+  ]
+  const fxCache = await buildFxCache(supabase, allCurrencies, fxAsOf)
+
+  const brl = (total: number | null | undefined, currency: string | null | undefined, ownFx: number | null | undefined) =>
+    valueToBrl(total, currency, ownFx, fxCache, fxAsOf)
+
+  const totalQuotedBRL = (quotes ?? []).reduce((s, q) => s + brl(q.total_value, q.currency, q.fx_to_brl), 0)
+  const totalOrdersBRL = (orders ?? []).reduce((s, o) => s + brl(o.total_value, o.currency, o.fx_to_brl), 0)
 
   const kpis = {
     quotes_received: quotes?.length ?? 0,
@@ -57,50 +58,78 @@ Deno.serve(async (req) => {
     total_orders_brl: Math.round(totalOrdersBRL),
   }
 
-  // ─── By country ───────────────────────────────────────────────────────────
+  const byCountryMap: Record<string, {
+    country: string
+    quoted: number
+    orders: number
+    won: number
+    total: number
+    hit_rate?: number
+  }> = {}
 
-  const byCountryMap: Record<string, any> = {}
   for (const q of quotes ?? []) {
-    const iso2 = (q.account as any)?.country_iso2 ?? 'XX'
-    if (!byCountryMap[iso2]) byCountryMap[iso2] = {
-      country: (q.account as any)?.country ?? iso2,
-      quoted: 0, orders: 0, won: 0, total: 0,
+    const iso2 = (q.account as { country_iso2?: string })?.country_iso2 ?? 'XX'
+    if (!byCountryMap[iso2]) {
+      byCountryMap[iso2] = {
+        country: (q.account as { country?: string })?.country ?? iso2,
+        quoted: 0, orders: 0, won: 0, total: 0,
+      }
     }
-    byCountryMap[iso2].quoted += (q.total_value ?? 0) * (q.fx_to_brl ?? 5)
+    byCountryMap[iso2].quoted += brl(q.total_value, q.currency, q.fx_to_brl)
     byCountryMap[iso2].total++
     if (q.stage === 'won') byCountryMap[iso2].won++
   }
+
   for (const o of orders ?? []) {
-    const iso2 = (o.account as any)?.country_iso2 ?? 'XX'
-    if (!byCountryMap[iso2]) byCountryMap[iso2] = { country: (o.account as any)?.country, quoted: 0, orders: 0, won: 0, total: 0 }
-    byCountryMap[iso2].orders += (o.total_value ?? 0) * (o.fx_to_brl ?? 5)
+    const iso2 = (o.account as { country_iso2?: string })?.country_iso2 ?? 'XX'
+    if (!byCountryMap[iso2]) {
+      byCountryMap[iso2] = {
+        country: (o.account as { country?: string })?.country ?? iso2,
+        quoted: 0, orders: 0, won: 0, total: 0,
+      }
+    }
+    byCountryMap[iso2].orders += brl(o.total_value, o.currency, o.fx_to_brl)
   }
+
   for (const entry of Object.values(byCountryMap)) {
     entry.hit_rate = entry.total > 0 ? entry.won / entry.total : 0
     entry.quoted = Math.round(entry.quoted)
     entry.orders = Math.round(entry.orders)
   }
 
-  // ─── Top won / lost ───────────────────────────────────────────────────────
+  const sortByBrl = (a: { total_value: number | null; currency: string; fx_to_brl: number | null }, b: typeof a) =>
+    brl(b.total_value, b.currency, b.fx_to_brl) - brl(a.total_value, a.currency, a.fx_to_brl)
 
-  const wonQuotes = (quotes ?? []).filter(q => q.stage === 'won')
-    .sort((a, b) => ((b.total_value ?? 0) * (b.fx_to_brl ?? 5)) - ((a.total_value ?? 0) * (a.fx_to_brl ?? 5)))
+  const wonQuotes = (quotes ?? []).filter((q) => q.stage === 'won')
+    .sort(sortByBrl)
     .slice(0, 10)
-    .map(q => ({ account_name: (q.account as any)?.legal_name, total_value: q.total_value, currency: q.currency, product_group: q.product_group }))
+    .map((q) => ({
+      account_name: (q.account as { legal_name?: string })?.legal_name,
+      total_value: q.total_value,
+      currency: q.currency,
+      product_group: q.product_group,
+    }))
 
-  const lostQuotes = (quotes ?? []).filter(q => q.stage === 'lost')
-    .sort((a, b) => ((b.total_value ?? 0) * (b.fx_to_brl ?? 5)) - ((a.total_value ?? 0) * (a.fx_to_brl ?? 5)))
+  const lostQuotes = (quotes ?? []).filter((q) => q.stage === 'lost')
+    .sort(sortByBrl)
     .slice(0, 10)
-    .map(q => ({ account_name: (q.account as any)?.legal_name, total_value: q.total_value, currency: q.currency, product_group: q.product_group }))
+    .map((q) => ({
+      account_name: (q.account as { legal_name?: string })?.legal_name,
+      total_value: q.total_value,
+      currency: q.currency,
+      product_group: q.product_group,
+    }))
 
-  // ─── Commission estimate ──────────────────────────────────────────────────
+  const commissionDS = wonQuotes.reduce((s, q) => s + (q.total_value ?? 0), 0) * 0.025
+  const commissionDFJ = wonQuotes.reduce((s, q) => s + (q.total_value ?? 0), 0) * 0.015
 
-  const commissionDS = wonQuotes.reduce((s, q) => s + ((q as any).total_value ?? 0), 0) * 0.025
-  const commissionDFJ = wonQuotes.reduce((s, q) => s + ((q as any).total_value ?? 0), 0) * 0.015
+  const timeSeries: Array<{
+    month: string
+    quotes_received: number | null
+    quotes_sent: number | null
+    orders_received: number | null
+  }> = []
 
-  // ─── Time series (13 months) ──────────────────────────────────────────────
-
-  const timeSeries: any[] = []
   for (let i = 12; i >= 0; i--) {
     const d = new Date()
     d.setDate(1)
@@ -119,10 +148,9 @@ Deno.serve(async (req) => {
     timeSeries.push({ month: m, quotes_received: mReceived, quotes_sent: mSent, orders_received: mOrders })
   }
 
-  // ─── Create report ────────────────────────────────────────────────────────
-
-  const slug = `plp-${period}`
-  const title = `Relatório Executivo PLP Export — ${new Date(+year, +month - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}`
+  const slug = `export-${period}`
+  const productName = 'CRM Export'
+  const title = `Relatório Executivo ${productName} — ${new Date(+year, +month - 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}`
 
   const { data: report, error: rErr } = await supabase
     .from('monthly_reports')
@@ -130,9 +158,8 @@ Deno.serve(async (req) => {
     .select()
     .single()
 
-  if (rErr) return new Response(JSON.stringify({ error: rErr.message }), { status: 500 })
+  if (rErr) return jsonResponse({ error: rErr.message }, 500)
 
-  // Save snapshots
   const snapshots = [
     { report_id: report.id, metric_key: 'kpis', payload: kpis },
     { report_id: report.id, metric_key: 'by_country', payload: byCountryMap },
@@ -144,49 +171,50 @@ Deno.serve(async (req) => {
 
   await supabase.from('report_snapshots').upsert(snapshots, { onConflict: 'report_id,metric_key' })
 
-  // ─── Generate narrative with Claude ───────────────────────────────────────
+  const prevMonthData = timeSeries[timeSeries.length - 2]
+  const prevOrdersCount = prevMonthData?.orders_received ?? 0
+  const prevQuotesCount = prevMonthData?.quotes_received ?? 0
 
-  const narrativePrompt = `Você é analista comercial sênior da PLP Brasil. Escreva uma narrativa executiva em PORTUGUÊS para o relatório mensal de exportações.
+  const ordersDiff = kpis.orders_received - prevOrdersCount
+  const ordersCompareText = ordersDiff > 0
+    ? `um aumento de ${ordersDiff} pedido(s) em relação ao mês anterior (${prevOrdersCount} pedidos)`
+    : ordersDiff < 0
+      ? `uma redução de ${Math.abs(ordersDiff)} pedido(s) em relação ao mês anterior (${prevOrdersCount} pedidos)`
+      : `o mesmo volume do mês anterior (${prevOrdersCount} pedidos)`
 
-DADOS DO PERÍODO ${period}:
+  const quotesDiff = kpis.quotes_received - prevQuotesCount
+  const quotesCompareText = quotesDiff > 0
+    ? `crescimento na captação com mais ${quotesDiff} cotação(ões) recebida(s)`
+    : quotesDiff < 0
+      ? `retração de ${Math.abs(quotesDiff)} cotação(ões) na captação`
+      : `estabilidade na captação`
 
-KPIs:
-- Cotações recebidas: ${kpis.quotes_received}
-- Cotações enviadas: ${kpis.quotes_sent}
-- Pedidos recebidos: ${kpis.orders_received}
-- Volume cotado total: R$ ${kpis.total_quoted_brl.toLocaleString()}
-- Volume pedidos: R$ ${kpis.total_orders_brl.toLocaleString()}
+  const topWonText = wonQuotes.length > 0
+    ? `Os principais negócios fechados foram liderados por: ${wonQuotes.slice(0, 3).map((q) => `${q.account_name} (${q.currency} ${q.total_value?.toLocaleString()})`).join(', ')}.`
+    : 'Não houve registro de cotações ganhas relevantes neste período.'
 
-DESEMPENHO POR PAÍS:
-${Object.entries(byCountryMap).map(([iso2, d]: [string, any]) =>
-  `  ${iso2} (${d.country}): cotado R$ ${d.quoted.toLocaleString()}, pedidos R$ ${d.orders.toLocaleString()}, hit rate ${(d.hit_rate * 100).toFixed(0)}%`
-).join('\n')}
+  const countriesText = Object.entries(byCountryMap)
+    .sort((a, b) => b[1].orders - a[1].orders)
+    .slice(0, 3)
+    .map(([, c]) => `${c.country} (R$ ${c.orders.toLocaleString()} em pedidos, hit rate de ${((c.hit_rate ?? 0) * 100).toFixed(0)}%)`)
+    .join(', ')
 
-PRINCIPAIS PEDIDOS GANHOS:
-${wonQuotes.slice(0, 5).map((q: any) => `  - ${q.account_name}: ${q.currency} ${q.total_value?.toLocaleString()} (${q.product_group})`).join('\n')}
+  const countryHighlight = countriesText
+    ? `Geograficamente, os mercados que mais se destacaram em volume de pedidos foram: ${countriesText}.`
+    : 'Não houve faturamento ou pedidos fechados por região neste mês.'
 
-SÉRIE HISTÓRICA (últimos 3 meses):
-${timeSeries.slice(-3).map(m => `  ${m.month}: ${m.quotes_received} cotações, ${m.orders_received} pedidos`).join('\n')}
+  const narrative = `Relatório comercial do ${productName} referente ao período de ${period}. Durante este mês, registramos um volume total de cotações recebidas de R$ ${kpis.total_quoted_brl.toLocaleString()} (totalizando ${kpis.quotes_received} cotações), apresentando ${quotesCompareText} comparado ao mês anterior. O fechamento de negócios resultou em R$ ${kpis.total_orders_brl.toLocaleString()} em pedidos recebidos (${kpis.orders_received} pedidos), o que representa ${ordersCompareText}.
 
-INSTRUÇÕES:
-- Tom executivo, objetivo, sem adjetivos exagerados
-- Highlight as variações mais relevantes vs meses anteriores
-- Mencionar os mercados que se destacaram positiva e negativamente
-- Sugerir 2-3 prioridades para o próximo mês
-- Entre 300-400 palavras
-- Organizar em parágrafos sem headers`
+${topWonText} ${countryHighlight}
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 800,
-    messages: [{ role: 'user', content: narrativePrompt }],
-  })
+As comissões estimadas para o período são de USD ${commissionDS.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} para DS (2,5%) e USD ${commissionDFJ.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} para DFJ (1,5%).
 
-  const narrative = (msg.content[0] as any).text
+Como prioridades comerciais para o próximo ciclo, recomenda-se:
+1. Retomar contato urgente com cotações pendentes que estão no estágio de negociação para otimizar o hit rate geral.
+2. Monitorar os mercados com queda de volume cotado na região.
+3. Alinhar prazos de entrega com a produção para reduzir o atrito nos fechamentos.`
 
   await supabase.from('monthly_reports').update({ narrative }).eq('id', report.id)
 
-  return new Response(JSON.stringify({ ok: true, slug, report_id: report.id }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return jsonResponse({ ok: true, slug, report_id: report.id })
 })

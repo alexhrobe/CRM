@@ -11,6 +11,7 @@ import { RequestsPage } from '@/pages/RequestsPage'
 import { KanbanPage } from '@/pages/KanbanPage'
 import { TablePage } from '@/pages/TablePage'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { DiretoriaPage } from '@/pages/DiretoriaPage'
 import { AccountsListPage, AccountDetailPage } from '@/pages/AccountsPage'
 import { ContactsPage } from '@/pages/ContactsPage'
 import { ActivitiesPage } from '@/pages/ActivitiesPage'
@@ -62,6 +63,7 @@ function Router() {
           <Route path="/kanban" element={<KanbanPage />} />
           <Route path="/tabela" element={<TablePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/diretoria" element={<DiretoriaPage />} />
           <Route path="/contas" element={<AccountsListPage />} />
           <Route path="/contas/:id" element={<AccountDetailPage />} />
           <Route path="/contatos" element={<ContactsPage />} />

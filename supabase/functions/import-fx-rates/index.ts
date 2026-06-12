@@ -1,9 +1,5 @@
-import { createClient } from 'npm:@supabase/supabase-js'
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-)
+import { serviceClient as supabase, isAuthorizedCron, getAuthedUser } from '../_shared/auth.ts'
+import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 
 // Currencies to track against BRL
 const CURRENCIES = ['USD', 'EUR', 'ARS', 'CLP', 'COP', 'PEN', 'PYG']
@@ -49,10 +45,24 @@ const FALLBACK_RATES: Record<string, number> = {
   COP: 0.00125, PEN: 1.35, PYG: 0.00069,
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  if (!isAuthorizedCron(req)) {
+    const user = await getAuthedUser(req)
+    if (!user || user.role !== 'owner') return jsonResponse({ error: 'Unauthorized' }, 401)
+  }
+
   const today = new Date().toISOString().slice(0, 10)
   const results: Array<{ currency: string; rate: number; source: string }> = []
   const errors: string[] = []
+
+  const { data: runRow } = await supabase
+    .from('job_runs')
+    .insert({ job_name: 'import_fx_rates' })
+    .select('id')
+    .single()
+  const runId = runRow?.id
 
   for (const currency of CURRENCIES) {
     try {
@@ -87,8 +97,17 @@ Deno.serve(async (_req) => {
     }
   }
 
-  return new Response(
-    JSON.stringify({ ok: true, date: today, rates: results, errors }),
-    { headers: { 'Content-Type': 'application/json' } },
-  )
+  const success = errors.length === 0
+  const details = { date: today, rates: results, errors }
+
+  if (runId) {
+    await supabase.from('job_runs').update({
+      finished_at: new Date().toISOString(),
+      success,
+      details,
+      error_message: errors.length > 0 ? errors.join('; ') : null,
+    }).eq('id', runId)
+  }
+
+  return jsonResponse({ ok: success, ...details })
 })

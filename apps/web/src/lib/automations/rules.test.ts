@@ -9,7 +9,7 @@ const daysAhead = (n: number) => new Date(NOW + n * DAY).toISOString()
 
 function pq(over: Partial<PipelineQuote>): PipelineQuote {
   return {
-    id: 'q1', account_id: 'a1', owner_id: 'o1', assistant_id: null, quote_number: 'PLP-1',
+    id: 'q1', account_id: 'a1', owner_id: 'o1', assistant_id: null, quote_number: 'EXP-1',
     quote_type: 'competitive', stage: 'sent', total_value: 1000, currency: 'USD', fx_to_brl: 5,
     probability: null, product_group: null, product_description: null,
     received_at: daysAgo(1), sent_at: daysAgo(1), expected_close_at: null, decided_at: null,
@@ -33,19 +33,25 @@ describe('regras de automação', () => {
   })
 
   it('sinaliza negociação parada além do limite', () => {
-    expect(kinds(pq({ stage: 'negotiation', days_in_stage: 8 }))).not.toContain('stalled')
-    const t = deriveTasksForQuote(pq({ stage: 'negotiation', days_in_stage: 16 }), NOW)
+    expect(kinds(pq({ stage: 'negotiation', last_activity_at: daysAgo(8) }))).not.toContain('stalled')
+    const t = deriveTasksForQuote(pq({ stage: 'negotiation', last_activity_at: daysAgo(16) }), NOW)
     expect(t.find((x) => x.kind === 'stalled')?.severity).toBe('critical')
   })
 
   it('sinaliza análise parada (>5d)', () => {
-    expect(kinds(pq({ stage: 'in_analysis', days_in_stage: 6, received_at: daysAgo(6) }))).toContain('stalled')
+    expect(kinds(pq({ stage: 'in_analysis', last_activity_at: daysAgo(6) }))).toContain('stalled')
   })
 
   it('alerta validade expirando e vencida', () => {
-    const soon = deriveTasksForQuote(pq({ stage: 'sent', expected_close_at: daysAhead(3) }), NOW)
+    const soon = deriveTasksForQuote(
+      pq({ stage: 'sent', expected_close_at: daysAhead(3).slice(0, 10) }),
+      NOW,
+    )
     expect(soon.find((t) => t.kind === 'expiring')?.detail).toMatch(/3 dias/)
-    const past = deriveTasksForQuote(pq({ stage: 'negotiation', days_in_stage: 5, expected_close_at: daysAgo(2) }), NOW)
+    const past = deriveTasksForQuote(
+      pq({ stage: 'negotiation', expected_close_at: daysAgo(2).slice(0, 10) }),
+      NOW,
+    )
     expect(past.find((t) => t.kind === 'expiring')?.severity).toBe('critical')
   })
 
@@ -60,15 +66,19 @@ describe('regras de automação', () => {
   })
 
   it('uma cotação pode gerar várias tarefas (parada + expirando)', () => {
-    const k = kinds(pq({ stage: 'negotiation', days_in_stage: 20, expected_close_at: daysAhead(1) }))
+    const k = kinds(pq({
+      stage: 'negotiation',
+      last_activity_at: daysAgo(20),
+      expected_close_at: daysAhead(1).slice(0, 10),
+    }))
     expect(k).toContain('stalled')
     expect(k).toContain('expiring')
   })
 
   it('ordena por urgência (críticas primeiro)', () => {
     const quotes = [
-      pq({ id: 'a', stage: 'in_analysis', days_in_stage: 6, received_at: daysAgo(6) }), // warning
-      pq({ id: 'b', stage: 'sent', last_activity_at: daysAgo(10) }), // critical
+      pq({ id: 'a', stage: 'in_analysis', last_activity_at: daysAgo(6) }),
+      pq({ id: 'b', stage: 'sent', last_activity_at: daysAgo(10) }),
     ]
     const tasks = deriveTasks(quotes, NOW)
     expect(tasks[0].severity).toBe('critical')

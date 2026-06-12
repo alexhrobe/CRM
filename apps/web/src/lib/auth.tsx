@@ -26,11 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(s => ({ ...s, session, supaUser: session?.user ?? null }))
-      if (session?.user) fetchProfile(session.user.id)
-      else setState(s => ({ ...s, loading: false }))
-    })
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setState(s => ({ ...s, session, supaUser: session?.user ?? null }))
+        if (session?.user) fetchProfile(session.user.id)
+        else setState(s => ({ ...s, loading: false }))
+      })
+      .catch((err) => {
+        console.error('auth: getSession falhou', err)
+        setState(s => ({ ...s, loading: false }))
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setState(s => ({ ...s, session, supaUser: session?.user ?? null }))
@@ -42,8 +47,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function fetchProfile(id: string) {
-    const { data } = await supabase.from('users').select('*').eq('id', id).single()
-    setState(s => ({ ...s, user: data, loading: false }))
+    const { data, error } = await supabase.from('users').select('*').eq('id', id).single()
+    if (error) {
+      // Sessão válida mas perfil indisponível (RLS/rede): não deixa o app preso
+      // em "Carregando…" nem fingindo perfil carregado.
+      console.error('auth: não foi possível carregar o perfil do usuário', error)
+    }
+    setState(s => ({ ...s, user: data ?? null, loading: false }))
   }
 
   return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>

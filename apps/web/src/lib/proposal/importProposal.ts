@@ -1,10 +1,14 @@
 /**
  * Persiste uma proposta extraída: reaproveita a conta se já existir (casa pelo
  * nome), senão cria; cria o contato (se houver), a cotação e os itens.
+ *
+ * Tenta primeiro a RPC `import_proposal` (transação atômica, migration 10+).
+ * Se a função ainda não existir no banco remoto, faz o fluxo direto via API.
  * A planilha de origem não é armazenada.
  */
 import { supabase } from '@/lib/supabase'
 import type { ParsedProposal } from '@crm-plp/shared'
+import type { Json } from '@/lib/database.types'
 
 export interface ImportResult {
   quoteId: string
@@ -12,11 +16,20 @@ export interface ImportResult {
   reusedAccount: boolean
 }
 
-export async function importProposal(
+function isRpcUnavailable(error: { code?: string; message?: string }): boolean {
+  const msg = error.message?.toLowerCase() ?? ''
+  return (
+    error.code === 'PGRST202' ||
+    msg.includes('import_proposal') ||
+    msg.includes('could not find the function')
+  )
+}
+
+/** Fluxo direto (várias chamadas) — funciona sem migration 10. */
+async function importProposalDirect(
   proposal: ParsedProposal,
   ownerId: string,
 ): Promise<ImportResult> {
-  // 1. Conta — reaproveita por nome (case-insensitive), senão cria
   let accountId: string
   let reusedAccount = false
 
@@ -47,7 +60,6 @@ export async function importProposal(
     accountId = acc!.id
   }
 
-  // 2. Contato (best-effort, não bloqueia a importação)
   if (proposal.contact?.name) {
     const { data: existing } = await supabase
       .from('contacts')
@@ -66,7 +78,6 @@ export async function importProposal(
     }
   }
 
-  // Câmbio vigente para a moeda (para a conversão BRL funcionar de imediato)
   const { data: fxRows } = await supabase
     .from('fx_rates')
     .select('rate_to_brl')
@@ -75,7 +86,6 @@ export async function importProposal(
     .limit(1)
   const fxToBrl = fxRows?.[0]?.rate_to_brl ?? null
 
-  // 3. Cotação
   const { data: quote, error: qErr } = await supabase
     .from('quotes')
     .insert({
@@ -97,7 +107,6 @@ export async function importProposal(
   if (qErr) throw qErr
   const quoteId = quote!.id
 
-  // 4. Itens
   if (proposal.items.length > 0) {
     const { error: itErr } = await supabase.from('quote_items').insert(
       proposal.items.map((it) => ({
@@ -113,4 +122,23 @@ export async function importProposal(
   }
 
   return { quoteId, accountId, reusedAccount }
+}
+
+export async function importProposal(
+  proposal: ParsedProposal,
+  ownerId: string,
+): Promise<ImportResult> {
+  const { data, error } = await supabase.rpc('import_proposal', {
+    p_proposal: proposal as unknown as Json,
+    p_owner_id: ownerId,
+  })
+
+  if (!error) {
+    const result = data as unknown as ImportResult | null
+    if (result?.quoteId) return result
+  }
+
+  if (error && !isRpcUnavailable(error)) throw error
+
+  return importProposalDirect(proposal, ownerId)
 }

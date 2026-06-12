@@ -62,7 +62,7 @@ export function PublicReportPage() {
     <div className="bg-white dark:bg-gray-950 min-h-screen text-gray-900 dark:text-gray-100 print:text-black print:bg-white">
       {/* Print toolbar */}
       <div className="no-print flex items-center justify-between px-8 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 sticky top-0 z-10">
-        <span className="text-sm font-semibold text-gray-500">PLP Brasil · Relatório Mensal</span>
+        <span className="text-sm font-semibold text-gray-500">CRM Export · Relatório Mensal</span>
         <button
           onClick={() => window.print()}
           className="btn-secondary text-xs"
@@ -74,7 +74,7 @@ export function PublicReportPage() {
       <div className="max-w-5xl mx-auto px-8 py-12">
         {/* Title */}
         <div className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">PLP Brasil Export — Relatório Executivo</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">CRM Export — Relatório Executivo</p>
           <h1 className="text-3xl font-bold">{report.title}</h1>
           <p className="text-gray-500 mt-1">Período: {report.period}</p>
         </div>
@@ -141,7 +141,7 @@ export function PublicReportPage() {
         )}
 
         <div className="mt-16 pt-6 border-t border-gray-200 dark:border-gray-800 text-xs text-gray-400 text-center">
-          PLP Brasil Exportação · Documento gerado automaticamente · Confidencial
+          CRM Export · Documento gerado automaticamente · Confidencial
         </div>
       </div>
     </div>

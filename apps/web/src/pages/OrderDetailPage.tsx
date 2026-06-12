@@ -74,7 +74,10 @@ export function OrderDetailPage() {
           <div className="text-right">
             <p className="text-lg font-semibold">{formatCurrency(order.total_value, order.currency)}</p>
             {toBRL(order.total_value, order.currency, order.fx_to_brl) != null && (
-              <p className="text-xs text-gray-400">{formatBRL(toBRL(order.total_value, order.currency, order.fx_to_brl))}</p>
+              <p className="text-xs text-gray-400">
+                {formatBRL(toBRL(order.total_value, order.currency, order.fx_to_brl))}
+                {order.fx_to_brl == null && <span className="ml-1 text-gray-300">(câmbio atual)</span>}
+              </p>
             )}
           </div>
         </div>

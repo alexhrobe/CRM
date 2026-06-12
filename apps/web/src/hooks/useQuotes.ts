@@ -58,8 +58,7 @@ export function useCreateQuote() {
       return data
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['pipeline'] })
-      qc.invalidateQueries({ queryKey: ['quotes'] })
+      qc.invalidateQueries() // recalcula pipeline + KPIs + dashboard
     },
   })
 }
@@ -77,9 +76,8 @@ export function useUpdateQuote() {
       if (error) throw error
       return data
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['pipeline'] })
-      qc.invalidateQueries({ queryKey: ['quotes', vars.id] })
+    onSuccess: () => {
+      qc.invalidateQueries()
     },
   })
 }
@@ -92,8 +90,7 @@ export function useDeleteQuote() {
       if (error) throw error
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['pipeline'] })
-      qc.invalidateQueries({ queryKey: ['quotes'] })
+      qc.invalidateQueries() // recalcula pipeline + KPIs + dashboard
     },
   })
 }
@@ -111,10 +108,8 @@ export function useUpdateQuoteStage() {
       if (error) throw error
       return data
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['pipeline'] })
-      qc.invalidateQueries({ queryKey: ['quotes', vars.id] })
-      qc.invalidateQueries({ queryKey: ['quotes', 'all'] })
+    onSuccess: () => {
+      qc.invalidateQueries()
     },
   })
 }

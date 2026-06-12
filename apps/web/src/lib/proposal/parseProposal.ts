@@ -1,7 +1,7 @@
 /**
  * Parser determinístico de proposta em Excel (.xlsx).
  *
- * Calibrado para o modelo comercial da PLP (espanhol) e tolerante a variações:
+ * Calibrado para o modelo comercial de exportação (espanhol) e tolerante a variações:
  * combina rótulos, valor "inline" (label: valor na mesma célula), bloco de
  * cliente posicional (linha após "A") e detecção da tabela de itens pelos
  * cabeçalhos. Os mapas abaixo são o único ponto a ajustar para outros modelos.
@@ -221,7 +221,7 @@ export async function parseProposalBuffer(buffer: ArrayBuffer): Promise<ParsedPr
   let legal_name = valueFor(LABELS.legal_name, itemsTop)?.text.trim() ?? ''
   let countryText = valueFor(LABELS.country, itemsTop)?.text.trim() ?? ''
 
-  // Fallback posicional: bloco do cliente após uma célula "A" (modelo PLP)
+  // Fallback posicional: bloco do cliente após uma célula "A" (modelo comercial)
   if (!legal_name) {
     let aRow = -1
     for (let r = 0; r < Math.min(itemsTop, 20) && aRow < 0; r++)

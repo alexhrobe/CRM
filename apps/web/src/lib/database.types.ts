@@ -721,8 +721,87 @@ export type Database = {
           },
         ]
       }
+      job_runs: {
+        Row: {
+          id: string
+          job_name: string
+          started_at: string
+          finished_at: string | null
+          success: boolean | null
+          details: Json | null
+          error_message: string | null
+        }
+        Insert: {
+          id?: string
+          job_name: string
+          started_at?: string
+          finished_at?: string | null
+          success?: boolean | null
+          details?: Json | null
+          error_message?: string | null
+        }
+        Update: {
+          id?: string
+          job_name?: string
+          started_at?: string
+          finished_at?: string | null
+          success?: boolean | null
+          details?: Json | null
+          error_message?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
+      v_action_queue: {
+        Row: {
+          id: string | null
+          quote_id: string | null
+          account_id: string | null
+          quote_number: string | null
+          account_name: string | null
+          country_iso2: string | null
+          stage: string | null
+          task_kind: string | null
+          severity: Database['public']['Enums']['alert_severity'] | null
+          title: string | null
+          detail: string | null
+          total_value: number | null
+          currency: string | null
+          overdue_days: number | null
+          due_in_days: number | null
+          sort_value_brl: number | null
+          suggested_action: string | null
+          severity_ord: number | null
+        }
+        Relationships: []
+      }
+      v_executive_summary: {
+        Row: {
+          pipeline_brl: number | null
+          pipeline_weighted_brl: number | null
+          open_quotes: number | null
+          pending_actions: number | null
+          critical_actions: number | null
+          critical_value_brl: number | null
+          action_value_brl: number | null
+          last_fx_usd_date: string | null
+          top_account_concentration_pct: number | null
+          top_account_name: string | null
+        }
+        Relationships: []
+      }
+      v_pipeline_by_account: {
+        Row: {
+          account_id: string | null
+          account_name: string | null
+          country_iso2: string | null
+          open_quotes: number | null
+          pipeline_brl: number | null
+          pipeline_weighted_brl: number | null
+        }
+        Relationships: []
+      }
       v_pipeline_active: {
         Row: {
           id: string
@@ -814,6 +893,26 @@ export type Database = {
       get_fx_rate: {
         Args: { p_currency: string; p_date?: string }
         Returns: number
+      }
+      quote_effective_probability: {
+        Args: { p_stage: Database['public']['Enums']['quote_stage']; p_probability: number }
+        Returns: number
+      }
+      quote_stage_default_probability: {
+        Args: { p_stage: Database['public']['Enums']['quote_stage'] }
+        Returns: number
+      }
+      quote_value_brl: {
+        Args: { p_total: number; p_currency: string; p_fx: number }
+        Returns: number
+      }
+      import_proposal: {
+        Args: { p_proposal: Json; p_owner_id: string }
+        Returns: Json
+      }
+      run_daily_maintenance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
     }
     Enums: {

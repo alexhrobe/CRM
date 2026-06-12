@@ -1,6 +1,6 @@
-# Arquitetura — CRM PLP Export
+# Arquitetura — CRM Export
 
-> Sistema de gestão de cotações e pedidos de exportação da **PLP Brasil**, com
+> Sistema de gestão de cotações e pedidos de exportação, com
 > camada de inteligência (Claude) que monitora o pipeline e gera relatórios.
 
 Este documento descreve **como o sistema é montado e por quê**. Decisões com

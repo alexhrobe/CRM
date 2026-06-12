@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { PRODUCT_NAME } from '@crm-plp/shared'
 import { supabase } from '@/lib/supabase'
 
 export function LoginPage() {
@@ -33,8 +34,8 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <span className="text-4xl font-bold text-brand-600 dark:text-brand-400">P</span>
-          <h1 className="text-xl font-semibold mt-2">CRM PLP Export</h1>
+          <span className="text-4xl font-bold text-brand-600 dark:text-brand-400">E</span>
+          <h1 className="text-xl font-semibold mt-2">{PRODUCT_NAME}</h1>
           <p className="text-sm text-gray-500 mt-1">Sistema de gestão de exportações</p>
         </div>
 
@@ -46,7 +47,7 @@ export function LoginPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               className="input"
-              placeholder="voce@plpbrasil.com"
+              placeholder="voce@empresa.com"
               required
             />
           </div>

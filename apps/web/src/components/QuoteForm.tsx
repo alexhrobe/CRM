@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CreateQuoteSchema, type CreateQuote } from '@crm-plp/shared'
@@ -24,7 +25,7 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
 
   const isEdit = Boolean(initial?.id)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<CreateQuote>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CreateQuote>({
     resolver: zodResolver(CreateQuoteSchema),
     defaultValues: {
       account_id: '',
@@ -39,6 +40,14 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
       ...initial,
     },
   })
+
+  // Ao trocar a moeda, sincroniza o câmbio com a taxa vigente daquela moeda.
+  const currency = watch('currency')
+  useEffect(() => {
+    const r = rateFor(currency)
+    if (r != null) setValue('fx_to_brl', r)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency])
 
   async function onSubmit(values: CreateQuote) {
     if (!user) return
@@ -72,7 +81,7 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
 
         <div>
           <label className="label">Nº Proposta *</label>
-          <input {...register('quote_number')} className="input" placeholder="PLP-2024-001" />
+          <input {...register('quote_number')} className="input" placeholder="EXP-2024-001" />
           {errors.quote_number && <p className="text-xs text-red-500 mt-1">{errors.quote_number.message}</p>}
         </div>
 
@@ -89,7 +98,7 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
           <input
             type="number"
             step="0.01"
-            {...register('total_value', { valueAsNumber: true })}
+            {...register('total_value', { setValueAs: v => (v === '' || v == null ? null : Number(v)) })}
             className="input"
             placeholder="0.00"
           />
@@ -104,7 +113,7 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
 
         <div>
           <label className="label">Grupo de Produto</label>
-          <select {...register('product_group')} className="input">
+          <select {...register('product_group', { setValueAs: v => (v ? v : null) })} className="input">
             <option value="">Selecionar...</option>
             {Object.entries(PRODUCT_GROUP_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
@@ -137,7 +146,7 @@ export function QuoteForm({ initial, onSuccess, onCancel }: Props) {
           <input
             type="number"
             step="0.0001"
-            {...register('fx_to_brl', { valueAsNumber: true })}
+            {...register('fx_to_brl', { setValueAs: v => (v === '' || v == null ? null : Number(v)) })}
             className="input"
             placeholder="5.1000"
           />

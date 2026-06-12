@@ -1,12 +1,16 @@
-import { createClient } from 'npm:@supabase/supabase-js'
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-)
+import { serviceClient as supabase, getAuthedUser } from '../_shared/auth.ts'
+import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  const user = await getAuthedUser(req)
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401)
+
   const { quote_id } = await req.json()
+  if (!quote_id || typeof quote_id !== 'string') {
+    return jsonResponse({ error: 'quote_id is required' }, 400)
+  }
 
   const { data: quote } = await supabase
     .from('quotes')
@@ -15,7 +19,7 @@ Deno.serve(async (req) => {
     .single()
 
   if (!quote) {
-    return new Response(JSON.stringify({ error: 'Quote not found' }), { status: 404 })
+    return jsonResponse({ error: 'Quote not found' }, 404)
   }
 
   // Win rate by account
@@ -84,7 +88,5 @@ Deno.serve(async (req) => {
     .update({ probability })
     .eq('id', quote_id)
 
-  return new Response(JSON.stringify({ probability }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return jsonResponse({ probability })
 })

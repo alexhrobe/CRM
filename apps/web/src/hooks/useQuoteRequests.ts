@@ -39,7 +39,7 @@ export function useCreateQuoteRequest() {
       if (error) throw error
       return data!
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['quote-requests'] }),
+    onSuccess: () => qc.invalidateQueries(),
   })
 }
 
@@ -53,7 +53,7 @@ export function useUpdateQuoteRequest() {
       const { error } = await supabase.from('quote_requests').update(updates).eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['quote-requests'] }),
+    onSuccess: () => qc.invalidateQueries(),
   })
 }
 
@@ -64,6 +64,6 @@ export function useDeleteQuoteRequest() {
       const { error } = await supabase.from('quote_requests').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['quote-requests'] }),
+    onSuccess: () => qc.invalidateQueries(),
   })
 }

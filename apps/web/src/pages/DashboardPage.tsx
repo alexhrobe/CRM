@@ -3,6 +3,7 @@ import { useCountryMetrics, useMonthlyKpis } from '@/hooks/useDashboard'
 import { WorldMap } from '@/components/WorldMap'
 import { BrainPanel } from '@/components/BrainPanel'
 import { KpiStrip } from '@/components/KpiStrip'
+import { CountryBadge } from '@/components/CountryBadge'
 import { formatCurrency } from '@/lib/utils'
 import type { CountryMetrics } from '@crm-plp/shared'
 import {
@@ -20,19 +21,12 @@ const METRIC_LABELS: Record<Metric, string> = {
 
 export function DashboardPage() {
   const [metric, setMetric] = useState<Metric>('quoted')
+  const [selected, setSelected] = useState<CountryMetrics | null>(null)
   const { data: countryMetrics = [] } = useCountryMetrics()
   const { data: monthlyKpis = [] } = useMonthlyKpis()
 
-  function handleCountryClick(c: CountryMetrics) {
-    const label = METRIC_LABELS[metric]
-    const val = metric === 'quoted' ? formatCurrency(c.quoted_value_usd)
-      : metric === 'orders' ? formatCurrency(c.orders_value_usd)
-      : `${(c.hit_rate * 100).toFixed(0)}%`
-    alert(`${c.country} — ${label}: ${val}\nHit rate: ${(c.hit_rate * 100).toFixed(0)}%`)
-  }
-
   const chartData = monthlyKpis.map(m => ({
-    month: m.month.slice(5), // MM
+    month: m.month.slice(5),
     'Recebidas': m.quotes_received,
     'Enviadas': m.quotes_sent,
     'Pedidos': m.orders_received,
@@ -43,7 +37,6 @@ export function DashboardPage() {
       <KpiStrip />
 
       <div className="flex-1 flex flex-col">
-        {/* Metric toggle */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-200 dark:border-gray-800">
           <span className="text-sm font-semibold">Dashboard Mundial</span>
           <div className="flex rounded-md overflow-hidden border border-gray-200 dark:border-gray-700 text-xs ml-auto">
@@ -63,44 +56,74 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex gap-0 flex-1">
-          {/* Map + Chart column */}
-          <div className="flex-1 flex flex-col min-w-0 p-5 gap-6">
-            <div className="card overflow-hidden">
-              <WorldMap
-                data={countryMetrics}
-                metric={metric}
-                onCountryClick={handleCountryClick}
-              />
-            </div>
-
-            {/* Time series chart */}
-            <div className="card p-4">
-              <h3 className="text-sm font-semibold mb-4">Últimos 12 meses</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--tw-prose-hr, #e5e7eb)" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="Recebidas" stroke="#6366f1" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Enviadas" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Pedidos" stroke="#10b981" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="flex flex-1 min-h-0">
+          <div className="flex-1 min-w-0 p-4">
+            <WorldMap
+              data={countryMetrics}
+              metric={metric}
+              onCountryClick={setSelected}
+            />
           </div>
 
-          {/* Brain panel */}
-          <div className="w-72 shrink-0 border-l border-gray-200 dark:border-gray-800 overflow-y-auto">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <span>✨</span> Cérebro
-              </h3>
+          <div className="w-72 shrink-0 border-l border-gray-200 dark:border-gray-800 flex flex-col">
+            {selected ? (
+              <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-sm">{selected.country}</h3>
+                    <CountryBadge iso2={selected.country_iso2} />
+                  </div>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="text-gray-400 hover:text-gray-600 text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <dl className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Cotado</dt>
+                    <dd className="font-medium tabular-nums">{formatCurrency(selected.quoted_value_usd)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Pedidos</dt>
+                    <dd className="font-medium tabular-nums">{formatCurrency(selected.orders_value_usd)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Hit rate</dt>
+                    <dd className="font-medium">{(selected.hit_rate * 100).toFixed(0)}%</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-gray-500">Cotações</dt>
+                    <dd className="font-medium">{selected.quote_count}</dd>
+                  </div>
+                </dl>
+              </div>
+            ) : (
+              <div className="p-4 border-b border-gray-200 dark:border-gray-800 text-xs text-gray-400">
+                Clique em um país no mapa para ver detalhes
+              </div>
+            )}
+            <div className="flex-1 overflow-y-auto">
+              <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase">Radar de risco</p>
+              <BrainPanel />
             </div>
-            <BrainPanel />
           </div>
+        </div>
+
+        <div className="h-56 px-5 pb-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-800" />
+              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="Recebidas" stroke="#f59e0b" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="Enviadas" stroke="#6366f1" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="Pedidos" stroke="#10b981" dot={false} strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

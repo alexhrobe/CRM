@@ -32,10 +32,8 @@ export function useCreateActivity() {
       if (error) throw error
       return data
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['activities'] })
-      if (vars.quote_id) qc.invalidateQueries({ queryKey: ['quotes', vars.quote_id] })
-      if (vars.account_id) qc.invalidateQueries({ queryKey: ['accounts', vars.account_id] })
+    onSuccess: () => {
+      qc.invalidateQueries()
     },
   })
 }
@@ -48,7 +46,7 @@ export function useUpdateActivity() {
       if (error) throw error
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['activities'] }),
+    onSuccess: () => qc.invalidateQueries(),
   })
 }
 
@@ -59,6 +57,18 @@ export function useDeleteActivity() {
       const { error } = await supabase.from('activities').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['activities'] }),
+    onSuccess: () => qc.invalidateQueries(),
+  })
+}
+
+export function useDeleteActivities() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 0) return
+      const { error } = await supabase.from('activities').delete().in('id', ids)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries(),
   })
 }

@@ -4,7 +4,7 @@ import { CreateQuoteSchema, QuoteStage, AccountType } from '@crm-plp/shared'
 describe('CreateQuoteSchema', () => {
   const valid = {
     account_id: '11111111-1111-1111-1111-111111111111',
-    quote_number: 'PLP-2024-001',
+    quote_number: 'EXP-2024-001',
     quote_type: 'competitive' as const,
     total_value: 50_000,
     received_at: '2024-06-01',

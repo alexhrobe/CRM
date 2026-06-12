@@ -45,11 +45,12 @@ export function ImportProposalModal({ onClose, onImported }: Props) {
     setStatus('importing')
     try {
       const { quoteId } = await importProposal(proposal, user.id)
-      qc.invalidateQueries({ queryKey: ['pipeline'] })
-      qc.invalidateQueries({ queryKey: ['quotes'] })
+      qc.invalidateQueries() // recalcula pipeline + KPIs + dashboard
       onImported(quoteId)
     } catch (err) {
-      setErrors([(err as Error).message || 'Falha ao importar.'])
+      const e = err as { message?: string; details?: string; hint?: string }
+      const parts = [e.message, e.details, e.hint].filter(Boolean)
+      setErrors([parts.join(' — ') || 'Falha ao importar.'])
       setStatus('preview')
     }
   }

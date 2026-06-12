@@ -44,7 +44,7 @@ export function useCreateOrder() {
       return data
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['orders'] })
+      qc.invalidateQueries()
     },
   })
 }
@@ -62,9 +62,8 @@ export function useUpdateOrder() {
       if (error) throw error
       return data
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['orders'] })
-      qc.invalidateQueries({ queryKey: ['orders', vars.id] })
+    onSuccess: () => {
+      qc.invalidateQueries()
     },
   })
 }
@@ -76,6 +75,6 @@ export function useDeleteOrder() {
       const { error } = await supabase.from('orders').delete().eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+    onSuccess: () => qc.invalidateQueries(),
   })
 }

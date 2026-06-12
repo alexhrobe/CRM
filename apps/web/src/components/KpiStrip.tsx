@@ -1,6 +1,5 @@
 import { useCurrentMonthKpis } from '@/hooks/useDashboard'
 import { usePipelineQuotes } from '@/hooks/useQuotes'
-import { useFxRates } from '@/hooks/useFxRates'
 import { formatCurrency } from '@/lib/utils'
 
 function delta(curr: number, prev: number) {
@@ -29,9 +28,8 @@ export function KpiStrip() {
   const c = data?.current
   const p = data?.previous
   const { data: pipeline = [] } = usePipelineQuotes()
-  const { toBRL } = useFxRates()
   const pipelineBrl = pipeline.reduce(
-    (s, q) => s + (q.total_value_brl ?? toBRL(q.total_value, q.currency, q.fx_to_brl) ?? 0),
+    (s, q) => s + (q.total_value_brl ?? 0),
     0,
   )
 

@@ -57,7 +57,7 @@ export function useCreateAccount() {
       if (error) throw error
       return data
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
+    onSuccess: () => qc.invalidateQueries(),
   })
 }
 
@@ -74,9 +74,8 @@ export function useUpdateAccount() {
       if (error) throw error
       return data
     },
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: ['accounts'] })
-      qc.invalidateQueries({ queryKey: ['accounts', vars.id] })
+    onSuccess: () => {
+      qc.invalidateQueries()
     },
   })
 }
@@ -89,8 +88,7 @@ export function useDeleteAccount() {
       if (error) throw error
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['accounts'] })
-      qc.invalidateQueries({ queryKey: ['account-health'] })
+      qc.invalidateQueries()
     },
   })
 }

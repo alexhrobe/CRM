@@ -32,9 +32,8 @@ export function useCreateContact() {
       if (error) throw error
       return data
     },
-    onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: ['contacts'] })
-      qc.invalidateQueries({ queryKey: ['accounts', vars.account_id] })
+    onSuccess: () => {
+      qc.invalidateQueries()
     },
   })
 }
@@ -48,8 +47,7 @@ export function useUpdateContact() {
       return data
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['contacts'] })
-      qc.invalidateQueries({ queryKey: ['accounts'] })
+      qc.invalidateQueries()
     },
   })
 }
@@ -62,8 +60,7 @@ export function useDeleteContact() {
       if (error) throw error
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['contacts'] })
-      qc.invalidateQueries({ queryKey: ['accounts'] })
+      qc.invalidateQueries()
     },
   })
 }

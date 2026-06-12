@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAllQuotes } from '@/hooks/useQuotes'
+import { useFxRates } from '@/hooks/useFxRates'
 import { KpiStrip } from '@/components/KpiStrip'
 import { StageBadge } from '@/components/StageBadge'
 import { TypeBadge } from '@/components/TypeBadge'
@@ -14,7 +15,7 @@ type SortKey = 'received_at' | 'total_value' | 'stage' | 'account_name' | 'days'
 
 const ACTIVE_STAGES = ['received', 'in_analysis', 'sent', 'negotiation', 'stalled']
 
-function exportCSV(rows: any[]) {
+function exportCSV(rows: any[], toBRL: (v: number | null, c: string, fx?: number | null) => number | null) {
   const headers = ['Data Recebida','Cliente','País','Nº Proposta','Produto','Valor','Moeda','Valor BRL','Estágio','Tipo','Idade(d)']
   const lines = rows.map(r => [
     formatDate(r.received_at),
@@ -24,7 +25,7 @@ function exportCSV(rows: any[]) {
     PRODUCT_GROUP_LABELS[r.product_group] ?? '',
     r.total_value ?? '',
     r.currency,
-    r.total_value && r.fx_to_brl ? (r.total_value * r.fx_to_brl).toFixed(2) : '',
+    toBRL(r.total_value, r.currency, r.fx_to_brl)?.toFixed(2) ?? '',
     STAGE_LABELS[r.stage] ?? r.stage,
     r.quote_type === 'competitive' ? 'Comp' : 'Repos',
     daysSince(r.received_at),
@@ -41,6 +42,7 @@ function exportCSV(rows: any[]) {
 export function TablePage() {
   const navigate = useNavigate()
   const { data: quotes = [], isLoading } = useAllQuotes()
+  const { toBRL } = useFxRates()
   const [stageFilter, setStageFilter] = useState<string[]>([])
   const [typeFilter, setTypeFilter] = useState<string[]>([])
   const [search, setSearch] = useState('')
@@ -134,7 +136,7 @@ export function TablePage() {
             <a href="/kanban" className="px-2.5 py-1 bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-400">Kanban</a>
             <span className="px-2.5 py-1 bg-gray-900 text-white dark:bg-white dark:text-gray-900">Tabela</span>
           </div>
-          <button onClick={() => exportCSV(filtered)} className="btn-secondary text-xs">
+          <button onClick={() => exportCSV(filtered, toBRL)} className="btn-secondary text-xs">
             ↓ CSV
           </button>
         </div>
@@ -179,8 +181,8 @@ export function TablePage() {
                     {formatCurrency(q.total_value, q.currency)}
                   </td>
                   <td className="px-3 py-2 tabular-nums text-right text-xs text-gray-400 whitespace-nowrap">
-                    {q.total_value && q.fx_to_brl
-                      ? formatCurrency(q.total_value * q.fx_to_brl, 'BRL')
+                    {toBRL(q.total_value, q.currency, q.fx_to_brl) != null
+                      ? formatCurrency(toBRL(q.total_value, q.currency, q.fx_to_brl), 'BRL')
                       : '—'}
                   </td>
                   <td className="px-3 py-2">

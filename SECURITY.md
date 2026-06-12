@@ -1,4 +1,4 @@
-# Segurança — CRM PLP Export
+# Segurança — CRM Export
 
 Modelo de ameaça, decisões de autorização e registro de auditoria do sistema.
 A autorização vive no **banco** (RLS), não no frontend — o cliente nunca é a

@@ -14,6 +14,7 @@ const NAV = [
   { to: '/contatos', label: 'Contatos', icon: '👤' },
   { to: '/atividades', label: 'Atividades', icon: '📋' },
   { to: '/dashboard', label: 'Dashboard', icon: '🌍' },
+  { to: '/diretoria', label: 'Comando', icon: '🎯' },
   { to: '/relatorio', label: 'Relatório', icon: '📊' },
 ]
 
@@ -28,7 +29,7 @@ export function Sidebar() {
     <nav className="flex flex-col w-14 shrink-0 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 h-screen sticky top-0">
       {/* Logo */}
       <div className="flex items-center justify-center h-12 border-b border-gray-200 dark:border-gray-800">
-        <span className="text-lg font-bold text-brand-600 dark:text-brand-400">P</span>
+        <span className="text-lg font-bold text-brand-600 dark:text-brand-400" title="CRM Export">E</span>
       </div>
 
       {/* Nav items */}

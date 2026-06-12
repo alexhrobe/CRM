@@ -51,12 +51,13 @@ export function daysSince(date: string | null): number {
 export function priorityScore(quote: {
   total_value: number | null
   fx_to_brl: number | null
+  total_value_brl?: number | null
   stage: string
   days_in_stage: number
   has_active_alert: boolean
 }): number {
   let score = 0
-  const valueBrl = (quote.total_value ?? 0) * (quote.fx_to_brl ?? 5.1)
+  const valueBrl = quote.total_value_brl ?? (quote.total_value ?? 0) * (quote.fx_to_brl ?? 5.05)
   score += Math.log10(valueBrl + 1) * 10
   if (quote.stage === 'received' && quote.days_in_stage > 2) score += 30
   if (quote.stage === 'sent' && quote.days_in_stage > 5) score += 20

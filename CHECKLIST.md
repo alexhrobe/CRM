@@ -1,4 +1,4 @@
-# CHECKLIST — CRM PLP Export
+# CHECKLIST — CRM Export
 
 ## Critérios de aceitação
 
@@ -24,7 +24,7 @@
   - 110 atividades de vários tipos
   - 5 brain_alerts com severidades variadas
   - 90 dias de taxas FX para USD, EUR, ARS, CLP, COP, PEN, PYG
-- Credenciais seed: `owner@plpbrasil.com` / `PLP@2024!`
+- Credenciais seed: `owner@crmexport.local` / `Export@2024!`
 - `InboxPage` renderiza 3 seções colapsáveis com priorização por score
 
 ### ✅ 4. Criar cotação, editar, mover de estágio, registrar atividade

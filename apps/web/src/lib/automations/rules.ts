@@ -1,6 +1,9 @@
 /**
  * Motor de regras de automação — determinístico, sem IA.
  *
+ * Em produção a fila de ação vem de v_action_queue (Postgres), que espelha
+ * estas regras. Este módulo permanece para testes unitários e referência.
+ *
  * As tarefas são DERIVADAS do pipeline (não persistidas): assim que você
  * registra uma atividade na cotação (atualizando last_activity_at) ou ela muda
  * de estágio, a tarefa correspondente some sozinha. Sem tarefa fantasma.
@@ -44,10 +47,23 @@ const OPEN_STAGES = ['received', 'in_analysis', 'sent', 'negotiation', 'stalled'
 
 const daysSince = (iso: string | null, now: number) =>
   iso ? Math.floor((now - new Date(iso).getTime()) / DAY) : 0
-const daysUntil = (iso: string, now: number) =>
-  Math.ceil((new Date(iso).getTime() - now) / DAY)
 const addDays = (iso: string, n: number) =>
   new Date(new Date(iso).getTime() + n * DAY).toISOString()
+
+/** Dias até a validade (calendário, alinhado ao SQL: date − current_date). */
+function daysUntilValidity(
+  q: PipelineQuote,
+  now: number,
+  cfg: AutomationConfig,
+): number {
+  const validDate = q.expected_close_at
+    ? q.expected_close_at.slice(0, 10)
+    : addDays(q.received_at, cfg.validityDays).slice(0, 10)
+  const end = new Date(validDate + 'T12:00:00Z').getTime()
+  const today = new Date(now)
+  today.setUTCHours(12, 0, 0, 0)
+  return Math.round((end - today.getTime()) / DAY)
+}
 
 export function deriveTasksForQuote(
   q: PipelineQuote,
@@ -84,37 +100,35 @@ export function deriveTasksForQuote(
     }
   }
 
-  // 2. Negociação / análise parada
-  if (q.stage === 'negotiation' && q.days_in_stage > cfg.stalledNegotiationDays) {
-    const d = Math.round(q.days_in_stage)
+  // 2. Negociação / análise parada (sem atividade — alinhado a last_activity_at / auto_stall)
+  const idleDays = daysSince(q.last_activity_at, now)
+  if (q.stage === 'negotiation' && idleDays > cfg.stalledNegotiationDays) {
     tasks.push({
       ...base,
       id: `${q.id}:stalled`,
       kind: 'stalled',
-      severity: d >= cfg.stalledNegotiationDays * 1.5 ? 'critical' : 'warning',
+      severity: idleDays >= cfg.stalledNegotiationDays * 1.5 ? 'critical' : 'warning',
       title: 'Negociação parada — destravar',
-      detail: `Há ${d} dias em negociação`,
-      overdueDays: d - cfg.stalledNegotiationDays,
+      detail: `Há ${idleDays} dias sem atividade em negociação`,
+      overdueDays: idleDays - cfg.stalledNegotiationDays,
       dueInDays: null,
     })
   }
-  if (q.stage === 'in_analysis' && q.days_in_stage > cfg.stalledAnalysisDays) {
-    const d = Math.round(q.days_in_stage)
+  if (q.stage === 'in_analysis' && idleDays > cfg.stalledAnalysisDays) {
     tasks.push({
       ...base,
       id: `${q.id}:stalled`,
       kind: 'stalled',
       severity: 'warning',
       title: 'Análise parada — avançar',
-      detail: `Há ${d} dias em análise`,
-      overdueDays: d - cfg.stalledAnalysisDays,
+      detail: `Há ${idleDays} dias sem atividade em análise`,
+      overdueDays: idleDays - cfg.stalledAnalysisDays,
       dueInDays: null,
     })
   }
 
   // 3. Validade expirando / vencida
-  const validUntil = q.expected_close_at ?? addDays(q.received_at, cfg.validityDays)
-  const du = daysUntil(validUntil, now)
+  const du = daysUntilValidity(q, now, cfg)
   if (du < 0) {
     tasks.push({
       ...base,

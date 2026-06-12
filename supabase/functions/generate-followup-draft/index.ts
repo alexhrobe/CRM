@@ -1,15 +1,16 @@
-import Anthropic from 'npm:@anthropic-ai/sdk'
-import { createClient } from 'npm:@supabase/supabase-js'
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-)
-
-const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
+import { serviceClient as supabase, getAuthedUser } from '../_shared/auth.ts'
+import { corsHeaders, jsonResponse } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  const user = await getAuthedUser(req)
+  if (!user) return jsonResponse({ error: 'Unauthorized' }, 401)
+
   const { quote_id } = await req.json()
+  if (!quote_id || typeof quote_id !== 'string') {
+    return jsonResponse({ error: 'quote_id is required' }, 400)
+  }
 
   const { data: quote } = await supabase
     .from('quotes')
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
     .single()
 
   if (!quote) {
-    return new Response(JSON.stringify({ error: 'Quote not found' }), { status: 404 })
+    return jsonResponse({ error: 'Quote not found' }, 404)
   }
 
   const daysSinceSent = quote.sent_at
@@ -30,45 +31,60 @@ Deno.serve(async (req) => {
     : null
 
   const contact = (quote.account as any)?.contacts?.[0]
-  const recentActivities = ((quote.activities as any[]) ?? [])
-    .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
-    .slice(0, 5)
-    .map(a => `  - ${a.kind}: ${a.title ?? ''} (${a.occurred_at.slice(0,10)})`)
-    .join('\n')
 
-  const prompt = `Você é o assistente comercial da PLP Brasil, empresa líder em hardware elétrico para transmissão e distribuição de energia.
+  const contactName = contact?.name ?? 'Prezados'
+  const clientCompany = (quote.account as any)?.legal_name ?? 'su empresa'
+  const quoteNum = quote.quote_number
+  const valText = quote.total_value ? `${quote.currency} ${quote.total_value.toLocaleString()}` : ''
+  const prodText = quote.product_description || quote.product_group || 'hardware eléctrico'
 
-Gere um email de follow-up profissional em ESPANHOL (idioma do cliente) para:
+  const formalDraft = `Estimado/a ${contactName},
 
-COTAÇÃO: ${quote.quote_number}
-CLIENTE: ${(quote.account as any)?.legal_name} (${(quote.account as any)?.country})
-CONTATO: ${contact?.name ?? 'Prezados'} (${contact?.role ?? ''})
-PRODUTO: ${quote.product_description ?? quote.product_group ?? 'hardware elétrico'}
-VALOR: ${quote.currency} ${quote.total_value?.toLocaleString()}
-DIAS DESDE ENVIO: ${daysSinceSent ?? 'desconhecido'}
+Espero que se encuentre muy bien.
 
-HISTÓRICO RECENTE:
-${recentActivities || 'Nenhuma atividade registrada'}
+Nos ponemos en contacto en relación con la propuesta comercial ${quoteNum} enviada para ${clientCompany}, referente a ${prodText}${valText ? ` por un valor total de ${valText}` : ''}.
 
-INSTRUÇÕES:
-- Tom: profissional mas próximo
-- Reafirmar proposta de valor da PLP
-- Perguntar sobre prazo de decisão e se há dúvidas técnicas
-- Mencionar que pode agendar call técnica
-- Máximo 200 palavras
-- Assinar como "Equipe Comercial PLP Brasil"
+Quisiéramos saber si han tenido la oportunidad de revisar la documentación técnica y comercial, y si existe alguna duda u observación en la que podamos asistirle. Si lo considera oportuno, podemos coordinar una breve llamada con nuestro equipo técnico para aclarar cualquier punto de la especificación.
 
-Responda com o texto do email pronto para copiar/colar.`
+Agradecemos de antemano su atención y quedamos a su entera disposición.
 
-  const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 500,
-    messages: [{ role: 'user', content: prompt }],
-  })
+Atentamente,
+Equipe Comercial — CRM Export`
 
-  const draft = (msg.content[0] as any).text
+  const comercialDraft = `Hola ${contactName},
 
-  return new Response(JSON.stringify({ draft }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
+¿Cómo está? Espero que todo vaya bien.
+
+Le escribo para hacer el seguimiento de nuestra propuesta ${quoteNum} para el suministro de ${prodText}.
+
+Estamos listos para avanzar con su pedido y coordinar el cronograma de producción de la fábrica. ¿Tienen alguna previsión sobre las próximas etapas de decisión o necesitan que ajustemos alguna de las condiciones comerciales presentadas?
+
+Quedo atento a sus comentarios.
+
+Un cordial saludo,
+Equipe Comercial — CRM Export`
+
+  const urgenteDraft = `Estimado/a ${contactName},
+
+Espero que se encuentre bien.
+
+Le escribo con respecto a la propuesta ${quoteNum} (${prodText}) que enviamos hace unos días. Dado que estamos cerrando la programación de producción para las próximas semanas, nos gustaría confirmar si el proyecto sigue en pie y si tienen una fecha estimada para la adjudicación.
+
+Si requiere una actualización del plazo de entrega o alguna aclaración urgente, por favor hágamelo saber para gestionarlo de inmediato.
+
+Quedo a la espera de su amable respuesta.
+
+Saludos cordiales,
+Equipe Comercial — CRM Export`
+
+  const draft = `--- OPCIÓN 1: FORMAL / TÉCNICO ---
+${formalDraft}
+
+--- OPCIÓN 2: COMERCIAL / SEGUIMIENTO ---
+${comercialDraft}
+
+--- OPCIÓN 3: URGENTE / CRONOGRAMA ---
+${urgenteDraft}`
+
+  return jsonResponse({ draft })
 })
