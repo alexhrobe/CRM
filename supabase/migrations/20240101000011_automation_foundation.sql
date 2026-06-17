@@ -338,7 +338,7 @@ alter view public.v_executive_summary set (security_invoker = on);
 
 create extension if not exists pg_cron with schema extensions;
 
-do $$
+do $do$
 begin
   if exists (select 1 from cron.job where jobname = 'plp-daily-maintenance') then
     perform cron.unschedule('plp-daily-maintenance');
@@ -346,7 +346,7 @@ begin
   perform cron.schedule(
     'plp-daily-maintenance',
     '0 10 * * *',
-    $$select public.run_daily_maintenance()$$
+    $job$select public.run_daily_maintenance()$job$
   );
 exception
   when undefined_table then
@@ -354,4 +354,4 @@ exception
   when insufficient_privilege then
     raise notice 'sem privilégio para pg_cron — agende via Supabase Dashboard';
 end;
-$$;
+$do$;

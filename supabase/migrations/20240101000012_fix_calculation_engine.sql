@@ -26,6 +26,18 @@ as $$
   end;
 $$;
 
+-- ── Recriação limpa das views ─────────────────────────────────────────────────
+-- Estas views já existem (migrations 3/9/11). Algumas mudam o TIPO de coluna
+-- (ex.: quotes_received bigint→int), o que `create or replace view` proíbe.
+-- Removemos e recriamos. CASCADE é seguro: nada fora deste grupo depende delas.
+drop view if exists public.v_executive_summary cascade;
+drop view if exists public.v_pipeline_by_account cascade;
+drop view if exists public.v_pipeline_active cascade;
+drop view if exists public.v_action_queue cascade;
+drop view if exists public.v_account_health cascade;
+drop view if exists public.v_country_metrics cascade;
+drop view if exists public.v_monthly_kpis cascade;
+
 -- ── v_action_queue (regras alinhadas a rules.ts + last_activity_at) ───────────
 
 create or replace view public.v_action_queue as
@@ -358,11 +370,13 @@ select
     order by pipeline_brl desc limit 1
   )                                             as top_account_name;
 
--- security_invoker (views recriadas)
+-- security_invoker (todas as views recriadas — evita advisor SECURITY DEFINER)
 alter view public.v_pipeline_active set (security_invoker = on);
 alter view public.v_action_queue set (security_invoker = on);
 alter view public.v_account_health set (security_invoker = on);
 alter view public.v_country_metrics set (security_invoker = on);
 alter view public.v_monthly_kpis set (security_invoker = on);
+alter view public.v_pipeline_by_account set (security_invoker = on);
+alter view public.v_executive_summary set (security_invoker = on);
 alter view public.v_pipeline_by_account set (security_invoker = on);
 alter view public.v_executive_summary set (security_invoker = on);
