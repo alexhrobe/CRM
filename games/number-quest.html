@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Number Quest 3.0 — Números em inglês até 10.000</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0d1740;color:#fff;font:19px/1.5 system-ui,sans-serif;
+overflow-x:hidden}
+main{max-width:1150px;margin:auto;padding:22px;position:relative;z-index:1}
+h1{font-size:clamp(30px,5vw,50px);margin:8px 0}
+h2{font-size:clamp(23px,4vw,34px);margin:10px 0}
+h3{font-size:20px;margin:0 0 8px}
+button,input,select{font:inherit;border-radius:14px;padding:13px 17px}
+button{border:0;background:#ffe16b;color:#142044;font-weight:800;cursor:pointer;
+box-shadow:0 5px 0 #a4862c;transition:transform .12s}
+button:hover{filter:brightness(1.08)}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 #a4862c}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{
+outline:4px solid #75f0df;outline-offset:3px}
+input,select{border:0;background:#fff;color:#142044;width:100%}
+.secondary{background:#e0eaff;box-shadow:0 5px 0 #91a4cd}
+.ghost{background:#2b3d75;color:#fff;box-shadow:0 5px 0 #1a2550}
+.panel{background:#17265a;border:2px solid #3c4f87;border-radius:24px;
+padding:24px;margin:18px 0}
+.row{display:flex;gap:12px;align-items:center;justify-content:space-between;
+flex-wrap:wrap}
+.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.players{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+label{display:grid;gap:7px}
+.small{font-size:15px;color:#cfd9f4}
+.badge{display:inline-block;padding:7px 15px;border-radius:22px;background:#2f4279}
+.player{border:3px solid #3c4f87;border-radius:18px;padding:14px;text-align:center;
+overflow-wrap:anywhere;position:relative;transition:transform .25s}
+.player.active{border-color:var(--color);background:#27386e;
+box-shadow:0 0 22px #ffffff18;transform:translateY(-4px)}
+.player strong{display:block;margin:6px 0;font-size:17px}
+.player .points{font-size:24px;color:#ffe16b}
+.points.pop{animation:pop .55s ease-out}
+.float{position:absolute;left:50%;top:6px;transform:translateX(-50%);
+font-weight:900;color:#ffe16b;pointer-events:none;animation:floatUp 1.1s ease-out forwards}
+.center{text-align:center}
+.progress{height:12px;border-radius:20px;background:#2c3a6e;overflow:hidden;margin:16px 0}
+.progress span{display:block;height:100%;width:0;transition:width .6s cubic-bezier(.3,1.4,.5,1);
+background:linear-gradient(90deg,#6debc9,#ffe16b,#6debc9);background-size:200% 100%;
+animation:slide 3s linear infinite}
+.prompt{font-size:clamp(40px,8vw,90px);font-weight:900;letter-spacing:2px;
+min-height:140px;display:grid;place-items:center;margin:14px 0;
+white-space:pre-line;text-shadow:0 5px 0 #00000045}
+.prompt.small-text{font-size:clamp(22px,4vw,38px);letter-spacing:0}
+.options{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.options.stack{grid-template-columns:1fr}
+.options button{min-height:78px;font-size:clamp(22px,4vw,34px)}
+.options.stack button{font-size:clamp(17px,3vw,23px);min-height:62px;
+text-align:left;line-height:1.35}
+.options .correct{background:#6ee7a8;animation:winner .6s ease-out}
+.options .wrong{background:#d9e1f0;animation:shake .4s}
+.feedback{margin-top:20px;padding:17px;border-radius:16px;background:#2b3f73;
+text-align:left}
+.feedback strong{color:#fff0a8;font-size:21px}
+.feedback .say{background:#0f1c47;border-radius:12px;padding:10px 14px;margin-top:10px;
+font-size:clamp(19px,3vw,26px);font-weight:800;color:#8ff0d6}
+dialog{color:#fff;background:#152352;border:2px solid #6b84c0;border-radius:26px;
+width:min(880px,94vw);max-height:90vh;padding:26px}
+dialog::backdrop{background:#050b26ee}
+.turn-name{font-size:clamp(34px,7vw,70px);font-weight:900;overflow-wrap:anywhere;
+color:var(--turn-color,#ffe16b);animation:arrival .7s ease-out both}
+.avatar{font-size:72px;animation:bounce 1s ease-in-out infinite}
+.words{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:12px 0}
+.words div{background:#2c4174;padding:10px;border-radius:11px;font-size:16px}
+.rule{background:#1d2f66;border-left:5px solid #ffe16b;border-radius:12px;
+padding:12px 15px;margin:10px 0;font-size:16px}
+.rule b{color:#ffe16b}
+/* Lição / tutorial */
+.lesson{background:#152352;border:2px solid #6b84c0;border-radius:22px;padding:26px}
+.lesson-nav{display:flex;justify-content:space-between;align-items:center;
+gap:12px;margin-top:18px;flex-wrap:wrap}
+.dots{display:flex;gap:8px;justify-content:center;margin:6px 0 14px}
+.dots span{width:14px;height:14px;border-radius:50%;background:#2c3a6e;transition:.25s}
+.dots span.on{background:#ffe16b;transform:scale(1.25)}
+.slide-title{font-size:clamp(24px,4vw,36px);color:#ffe16b;margin:0 0 6px}
+.slide-rule{font-size:clamp(17px,3vw,22px);margin:8px 0 16px;color:#cfd9f4}
+.examples{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:14px;margin-top:10px}
+.example{background:#1d2f66;border:2px solid #3c4f87;border-radius:16px;
+padding:16px;text-align:center}
+.example .num{font-size:clamp(28px,5vw,44px);font-weight:900;color:#ffe16b}
+.example .eng{font-size:clamp(16px,3vw,22px);color:#8ff0d6;font-weight:700;
+margin-top:6px;overflow-wrap:anywhere}
+.example .tip{font-size:14px;color:#cfd9f4;margin-top:6px}
+.big-arrow{font-size:24px;color:#ffe16b;margin:0 6px}
+.split{display:flex;gap:8px;align-items:center;justify-content:center;
+flex-wrap:wrap;margin:6px 0}
+.split span{background:#0f1c47;border-radius:10px;padding:5px 10px;font-weight:800}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:49;opacity:0;background:#fff}
+#flash.on{animation:flash .5s ease-out}
+.shakeScreen{animation:shake .4s}
+[hidden]{display:none!important}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
+@keyframes floatUp{0%{opacity:1;transform:translate(-50%,0)}
+100%{opacity:0;transform:translate(-50%,-55px)}}
+@keyframes flash{0%{opacity:.8}100%{opacity:0}}
+@keyframes winner{0%{transform:scale(1)}35%{transform:scale(1.14)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-11px)}
+40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+@keyframes arrival{from{opacity:0;transform:translateY(26px) scale(.8)}
+to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+@keyframes slide{to{background-position:200% 0}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.lesson-slide{animation:fadeIn .35s ease-out}
+@media(max-width:700px){
+main{padding:11px}.panel{padding:16px}.fields{grid-template-columns:1fr}
+.players{grid-template-columns:repeat(2,1fr);gap:7px}
+.player{padding:8px;font-size:14px}.player strong{font-size:14px}
+.player .points{font-size:19px}
+.options{gap:8px}.options button{padding:11px 5px}
+.words{grid-template-columns:repeat(2,1fr)}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div id="flash"></div>
+<main>
+<header class="row">
+<div><span class="badge">Números até 10.000 • Aleatórios a cada jogo • 4 jogadores</span>
+<h1>🏝️ Number Quest 3.0</h1></div>
+<div style="display:flex;gap:8px">
+<button id="sound" class="ghost" aria-pressed="true">🔊 Som</button>
+<button id="fullscreen" class="secondary">Tela cheia</button>
+</div>
+</header>
+
+<!-- 1) Cadastro dos jogadores -->
+<section id="setup" class="panel">
+<h2>Quem vai explorar a ilha?</h2>
+<p>Quatro jogadores, seis rodadas, <strong>24 desafios</strong> — de <em>13 vs 30</em>
+a datas de nascimento. Os números são <strong>sorteados aleatoriamente</strong>
+a cada partida, indo de dezenas até <strong>10.000</strong>. Antes de começar,
+faça a <strong>aula de formação de números</strong>.</p>
+<form id="form">
+<div class="fields">
+<label>☀️ Jogador 1<input id="name0" placeholder="Nome do aluno" maxlength="18" required></label>
+<label>🌙 Jogador 2<input id="name1" placeholder="Nome do aluno" maxlength="18" required></label>
+<label>⚡ Jogador 3<input id="name2" placeholder="Nome do aluno" maxlength="18" required></label>
+<label>🔥 Jogador 4<input id="name3" placeholder="Nome do aluno" maxlength="18" required></label>
+</div>
+<p class="small">Ordem fixa: jogador 1 → 2 → 3 → 4. O aluno responde
+<strong>oralmente em inglês</strong>; a professora clica na alternativa que ele disse.</p>
+<button type="submit">📖 Ir para a aula →</button>
+<button type="button" id="skipToGame" class="secondary">Pular aula e começar ▶</button>
+</form>
+<details style="margin-top:20px">
+<summary>Roteiro para a professora</summary>
+<div class="small">
+<p><b>Duração:</b> 45–60 min. <b>Aula (5–8 min):</b> passe pelos 7 slides,
+lendo cada exemplo em voz alta e pedindo repetição do grupo. Insista no par
+<b>thirteen / thirty</b> — o <i>teen</i> tem a sílaba forte no fim e termina
+em /n/; o <i>ty</i> tem a sílaba forte no começo.</p>
+<p><b>Como conduzir:</b> compartilhe esta janela no Meet. O aluno anunciado
+lê em voz alta antes de escolher. Espere ~8 segundos antes de oferecer ajuda.
+Os colegas só ajudam quando ele pedir “Help, please!”.</p>
+<p><b>Rodada 6:</b> antes de começar, escreva no chat a data de nascimento de
+cada aluno. Ao final, cada um diz a própria data em inglês.</p>
+<p><b>Limites:</b> o jogo confere a alternativa, não a pronúncia. Erro não tira
+estrela — o aluno tenta de novo. Os números são novos a cada partida.</p>
+</div>
+</details>
+</section>
+
+<!-- 2) Aula de formação dos números -->
+<section id="lesson" class="lesson" hidden>
+<h2 id="lessonTitle">Como formar números em inglês</h2>
+<p class="small">Passe pelos 7 slides antes de começar. Peça para os alunos
+repetirem em voz alta cada exemplo.</p>
+<div class="dots" id="lessonDots"></div>
+<div id="lessonSlide"></div>
+<div class="lesson-nav">
+<button id="lessonPrev" class="secondary">← Voltar</button>
+<span class="small" id="lessonCounter"></span>
+<button id="lessonNext">Próximo slide →</button>
+</div>
+</section>
+
+<!-- 3) Jogo -->
+<section id="game" hidden>
+<div id="players" class="players"></div>
+<div class="row" style="margin-top:16px">
+<strong id="round"></strong>
+<button id="help" class="secondary">📖 Consultar</button>
+</div>
+<div class="progress"><span id="progress"></span></div>
+<div class="panel center">
+<div id="whose" class="badge"></div>
+<h2 id="title"></h2>
+<p id="instruction"></p>
+<div id="prompt" class="prompt"></div>
+<p id="speak" class="small"></p>
+<div id="options" class="options"></div>
+<div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+<p><button id="next" hidden>Próximo →</button></p>
+</div>
+</section>
+
+<!-- 4) Encerramento -->
+<section id="finish" class="panel center" hidden>
+<div style="font-size:80px">🏆</div>
+<h2>Aventura concluída!</h2>
+<p>We did it! — Nós conseguimos!</p>
+<div id="finalPlayers" class="players"></div>
+<h2>24 estrelas para a equipe!</h2>
+<p>Desafio final, um de cada vez, sem consultar:<br>
+<strong>“I was born on ______, ______.”</strong></p>
+<button id="restart">Jogar novamente (novos números)</button>
+</section>
+
+<dialog id="turnDialog" class="center" aria-labelledby="turnName">
+<p id="turnRound" class="badge"></p>
+<div id="turnIcon" class="avatar"></div>
+<p>Agora é a vez de…</p>
+<div id="turnName" class="turn-name"></div>
+<p id="turnMission"></p>
+<p class="small">Os colegas escutam. Se precisar, peça: “Help, please!”</p>
+<button id="ready">Estou pronto! ▶</button>
+</dialog>
+
+<dialog id="dictionary" aria-labelledby="dictTitle">
+<div class="row">
+<h2 id="dictTitle">Listen and repeat!</h2>
+<button id="closeWords">Fechar</button>
+</div>
+<div id="dictBody"></div>
+</dialog>
+
+<dialog id="pause" class="center" aria-labelledby="pauseTitle">
+<h2 id="pauseTitle">Rodada completa! 🎉</h2>
+<p id="pauseText"></p>
+<p><strong>Everybody, clap four times!</strong><br>Todos, batam palmas quatro vezes.</p>
+<button id="continue">Próxima rodada →</button>
+</dialog>
+</main>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- Números por extenso (0–9999) ---------- */
+const ONES=["zero","one","two","three","four","five","six","seven","eight","nine",
+"ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen",
+"eighteen","nineteen"];
+const TENS=["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+const MONTHS=["January","February","March","April","May","June","July","August",
+"September","October","November","December"];
+const MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto",
+"setembro","outubro","novembro","dezembro"];
+const ORD={1:"first",2:"second",3:"third",5:"fifth",8:"eighth",9:"ninth",12:"twelfth"};
+
+function say(n){
+ if(n<20)return ONES[n];
+ if(n<100){const u=n%10;return TENS[(n/10)|0]+(u?"-"+ONES[u]:"");}
+ if(n<1000){const r=n%100;return ONES[(n/100)|0]+" hundred"+(r?" "+say(r):"");}
+ if(n<10000){const r=n%1000;return say((n/1000)|0)+" thousand"+(r?" "+say(r):"");}
+ return "ten thousand";
+}
+function sayYear(y){
+ const c=(y/100)|0,r=y%100;
+ if(y>=2000&&y<2010)return "two thousand"+(r?" "+say(r):"");
+ if(r===0)return say(c)+" hundred";
+ if(r<10)return say(c)+" oh "+say(r);
+ return say(c)+" "+say(r);
+}
+function ordinal(n){
+ if(ORD[n])return ORD[n];
+ if(n<20)return say(n)+"th";
+ const u=n%10;
+ if(!u)return TENS[(n/10)|0].replace(/y$/,"ieth");
+ return TENS[(n/10)|0]+"-"+ordinal(u);
+}
+const digits=n=>String(n).split("").map(d=>ONES[+d]).join(" ");
+const br=n=>n.toLocaleString("pt-BR");
+
+/* ---------- Utilidades ---------- */
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){
+ const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+const uniq=a=>[...new Set(a)];
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function pickUnique(gen,n,seen){
+ const out=[];seen=seen||new Set();
+ let guard=0;
+ while(out.length<n && guard++<400){
+  const v=gen();const key=String(v);
+  if(!seen.has(key)){seen.add(key);out.push(v);}
+ }
+ return out;
+}
+function swapLast(n){const s=String(n).split("");
+ if(s.length<2)return n;
+ [s[s.length-1],s[s.length-2]]=[s[s.length-2],s[s.length-1]];return +s.join("");}
+function swapFirst(n){const s=String(n).split("");
+ if(s.length<2)return n;
+ [s[0],s[1]]=[s[1],s[0]];return +s.join("");}
+
+/* ---------- Aula: 7 slides ---------- */
+const LESSON=[
+ {title:"1. Os blocos 0–20",
+  rule:"Cada número de 0 a 12 tem nome próprio. De 13 a 19, o sufixo é <b>-teen</b>. Decore esses 20.",
+  examples:[
+   {num:"0",eng:"zero"},{num:"5",eng:"five"},{num:"12",eng:"twelve",tip:"nome próprio"},
+   {num:"13",eng:"thir-<b>TEEN</b>",tip:"força no fim"},
+   {num:"17",eng:"seven-<b>TEEN</b>"},{num:"19",eng:"nine-<b>TEEN</b>"}
+  ]},
+ {title:"2. As dezenas cheias (20, 30, 40 … 90)",
+  rule:"Sufixo <b>-ty</b>, com força na PRIMEIRA sílaba. Cuidado com twenty, thirty e forty (sem &quot;u&quot; em forty).",
+  examples:[
+   {num:"20",eng:"<b>TWEN</b>-ty"},{num:"30",eng:"<b>THIR</b>-ty"},
+   {num:"40",eng:"<b>FOR</b>-ty",tip:"sem &quot;u&quot;"},
+   {num:"50",eng:"<b>FIF</b>-ty"},{num:"70",eng:"<b>SEVEN</b>-ty"},
+   {num:"90",eng:"<b>NINE</b>-ty"}
+  ]},
+ {title:"3. Dezena + unidade (21–99) com hífen",
+  rule:"Leia a dezena primeiro, depois a unidade, unidas por <b>hífen</b>. Fórmula: <b>TENS-UNITS</b>.",
+  examples:[
+   {num:"47",eng:"forty-seven",tip:"40 + 7"},
+   {num:"62",eng:"sixty-two",tip:"60 + 2"},
+   {num:"85",eng:"eighty-five",tip:"80 + 5"},
+   {num:"39",eng:"thirty-nine",tip:"30 + 9"}
+  ]},
+ {title:"4. Centenas (100–999)",
+  rule:"Diga o algarismo das centenas + <b>hundred</b> + o resto. No inglês americano <b>não se diz &quot;and&quot;</b>.",
+  examples:[
+   {num:"200",eng:"two hundred"},
+   {num:"365",eng:"three hundred sixty-five",tip:"300 + 65"},
+   {num:"907",eng:"nine hundred seven",tip:"900 + 7"},
+   {num:"512",eng:"five hundred twelve",tip:"500 + 12"}
+  ]},
+ {title:"5. Milhares (1.000–10.000)",
+  rule:"Divida em blocos: <b>milhares</b> + <b>centenas</b> + <b>dezena-unidade</b>. Sem &quot;and&quot;.",
+  examples:[
+   {num:"1.250",eng:"one thousand two hundred fifty"},
+   {num:"3.480",eng:"three thousand four hundred eighty"},
+   {num:"5.006",eng:"five thousand six",tip:"não tem centena nem dezena"},
+   {num:"9.999",eng:"nine thousand nine hundred ninety-nine"},
+   {num:"10.000",eng:"ten thousand"}
+  ]},
+ {title:"6. Anos: leia em DOIS PARES",
+  rule:"Não é quantidade. Quebre em duas duplas de algarismos. Exceção: <b>2000–2009</b> usa &quot;two thousand + número&quot;.",
+  examples:[
+   {num:"1998",eng:"nineteen ninety-eight",tip:"19 | 98"},
+   {num:"1905",eng:"nineteen oh five",tip:"19 | 05"},
+   {num:"2005",eng:"two thousand five",tip:"exceção"},
+   {num:"2014",eng:"twenty fourteen",tip:"20 | 14"}
+  ]},
+ {title:"7. Data de nascimento",
+  rule:"Ordem americana: <b>MÊS + DIA ORDINAL + ANO em pares</b>. Ex.: 05/03/1998 → March fifth, nineteen ninety-eight.",
+  examples:[
+   {num:"3 → 3rd",eng:"third"},
+   {num:"5 → 5th",eng:"fifth",tip:"irregular"},
+   {num:"21 → 21st",eng:"twenty-first"},
+   {num:"March 5, 1998",eng:"March fifth, nineteen ninety-eight"}
+  ]}
+];
+let lessonIndex=0;
+
+function renderLesson(){
+ const s=LESSON[lessonIndex];
+ const host=$("lessonSlide");
+ host.replaceChildren();
+ const wrap=document.createElement("div");
+ wrap.className="lesson-slide";
+ const h=document.createElement("h3");
+ h.className="slide-title";h.textContent=s.title;
+ const r=document.createElement("p");
+ r.className="slide-rule";r.innerHTML=s.rule;
+ const grid=document.createElement("div");grid.className="examples";
+ s.examples.forEach(ex=>{
+  const c=document.createElement("div");c.className="example";
+  const n=document.createElement("div");n.className="num";n.textContent=ex.num;
+  const e=document.createElement("div");e.className="eng";e.innerHTML=ex.eng;
+  c.append(n,e);
+  if(ex.tip){const t=document.createElement("div");t.className="tip";
+   t.textContent=ex.tip;c.append(t);}
+  grid.append(c);
+ });
+ wrap.append(h,r,grid);
+ host.append(wrap);
+ /* dots + counter */
+ const dots=$("lessonDots");dots.replaceChildren();
+ LESSON.forEach((_,i)=>{
+  const d=document.createElement("span");
+  if(i===lessonIndex)d.className="on";dots.append(d);
+ });
+ $("lessonCounter").textContent=`Slide ${lessonIndex+1} de ${LESSON.length}`;
+ $("lessonPrev").disabled=lessonIndex===0;
+ $("lessonNext").textContent=lessonIndex===LESSON.length-1
+  ?"Começar o jogo ▶":"Próximo slide →";
+}
+
+/* ---------- Geração aleatória dos desafios ---------- */
+function generateSeries(){
+ /* Rodada 1: pares teen/ty — sorteia 4 dos 7 possíveis */
+ const teenPairs=[[13,30],[14,40],[15,50],[16,60],[17,70],[18,80],[19,90]];
+ const teens=shuffle(teenPairs).slice(0,4);
+
+ /* Rodada 2: dezenas + unidades (21–99, evitando múltiplos de 10) */
+ const tens=pickUnique(()=>{let n;do{n=randInt(21,99);}while(n%10===0);return n;},4);
+
+ /* Rodada 3: centenas (105–999, com unidade≠0 para exercitar leitura) */
+ const hundreds=pickUnique(()=>{
+  let n;do{n=randInt(105,999);}while(n%100===0);return n;},4);
+
+ /* Rodada 4: milhares até 10.000 — mistura variedade:
+    um com padrão “X mil e X”, um redondo, um com centena vazia */
+ const thBig=randInt(5000,10000);
+ const thMid=randInt(1200,4999);
+ const thRound=randInt(1,9)*1000;                   /* 1000, 2000 … 9000 */
+ const thGap=randInt(1,9)*1000+randInt(1,99);        /* ex.: 5006 */
+ const thousands=shuffle(uniq([thBig,thMid,thRound,thGap])).slice(0,4);
+ while(thousands.length<4){
+  const n=randInt(1000,10000);
+  if(!thousands.includes(n))thousands.push(n);
+ }
+
+ /* Rodada 5: anos — 1 antes de 2000, 1 em 2000–2009, 1 em 2010+, 1 sorteado */
+ const years=shuffle([
+  randInt(1970,1999),
+  randInt(2000,2009),
+  randInt(2010,2025),
+  randInt(1950,2025)
+ ]);
+
+ /* Rodada 6: datas — 4 datas aleatórias */
+ const dates=pickUnique(()=>[randInt(0,11),randInt(1,28),randInt(1990,2015)],4);
+
+ return {teens,tens,hundreds,thousands,years,dates};
+}
+
+/* ---------- Conteúdo das 6 rodadas ---------- */
+const ICON=["☀️","🌙","⚡","🔥"];
+const COLOR=["#ffe16b","#bca6ff","#72ecd5","#ff9f8a"];
+const MISSIONS=["Teens ou tens?","Dezenas e unidades","Centenas","Milhares até 10.000",
+"Anos","Data de nascimento"];
+const TITLES=["Read the number!","Say it in English!","Which number is it?",
+"Read the big number!","How do you say this year?","When were you born?"];
+const INSTRUCTIONS=[
+"Leia o numeral em voz alta. Cuidado: -teen ou -ty?",
+"Dezena primeiro, unidade depois, com hífen: 47 = forty-seven.",
+"Ouça a palavra e escolha o numeral certo.",
+"Milhares → centenas → dezenas. Sem “and” no inglês americano.",
+"Ano se lê em DOIS PARES, não como quantidade.",
+"Mês + dia ORDINAL + ano em pares."];
+
+function build(S){
+ const q=[];
+ const add=(round,prompt,answer,options,explanation,repeat,big)=>
+  q.push({round,prompt,answer,options:shuffle(uniq(options)),explanation,repeat,big});
+
+ /* 1 — teens vs tens */
+ S.teens.forEach(([teen,ty],i)=>{
+  const n=i%2?ty:teen, other=i%2?teen:ty, unit=n<20?n-10:n/10;
+  add(0,String(n),say(n),[say(n),say(other),ONES[unit]],
+   `${n} = ${say(n)}. O par perigoso é ${teen} (${say(teen)}) e ${ty} (${say(ty)}). `+
+   `No -teen a força está na ÚLTIMA sílaba e o som termina em /n/; `+
+   `no -ty a força está na PRIMEIRA sílaba e o final é /i/ curto.`,
+   say(n));
+ });
+
+ /* 2 — dezenas + unidades */
+ S.tens.forEach(n=>{
+  const rev=swapLast(n),teen=10+n%10;
+  add(1,String(n),say(n),[say(n),say(rev),say(teen)],
+   `${n} = ${say(n)}. Leia da esquerda para a direita: ${TENS[(n/10)|0]} `+
+   `(${((n/10)|0)*10}) + ${ONES[n%10]} (${n%10}), unidos por hífen. `+
+   `Invertendo os algarismos você teria ${rev} = ${say(rev)}.`,
+   say(n));
+ });
+
+ /* 3 — centenas (palavra → numeral) */
+ S.hundreds.forEach(n=>{
+  const a=swapLast(n),b=((n/100)|0)*1000+n%100;
+  add(2,say(n).toUpperCase(),String(n),[String(n),String(a),String(b)],
+   `${say(n)} = ${n}. “${ONES[(n/100)|0]} hundred” vale ${((n/100)|0)*100}; `+
+   `depois vem ${n%100===0?"nada":say(n%100)+" = "+n%100}. `+
+   `O erro comum é escrever ${b}, juntando os pedaços em vez de somá-los.`,
+   say(n),true);
+ });
+
+ /* 4 — milhares até 10.000 */
+ S.thousands.forEach(n=>{
+  const a=swapFirst(n),b=swapLast(n);
+  const distractors=uniq([say(n),say(a),say(b)]);
+  /* se ainda faltar distrator distinto, cria um variando outro dígito */
+  while(distractors.length<3){
+   const s=String(n).split("");
+   const i=randInt(0,s.length-1);
+   const d=String(randInt(0,9));
+   if(d!==s[i]){s[i]=d;const alt=+s.join("");
+    if(alt!==n && !distractors.includes(say(alt)))distractors.push(say(alt));}
+  }
+  add(3,br(n),say(n),distractors,
+   `${br(n)} = ${say(n)}. Quebre em blocos: ${(n/1000)|0} mil `+
+   `(${say((n/1000)|0)} thousand)${n%1000?" + "+(n%1000)+" ("+say(n%1000)+")":""}. `+
+   `Em inglês americano NÃO se diz “and” antes das dezenas — o britânico diz `+
+   `“${say((n/1000)|0)} thousand${n%1000?" and "+say(n%1000):""}”.`,
+   say(n),true);
+ });
+
+ /* 5 — anos */
+ S.years.forEach(y=>{
+  /* garante um distrator diferente: se swapLast não muda, tenta swapFirst */
+  let altYear=swapLast(y);
+  if(altYear===y)altYear=swapFirst(y);
+  if(altYear===y)altYear=y+11;
+  const alt=y<2000?say(y):sayYear(altYear);
+  const nota=y<2000
+   ?`“${say(y)}” é a forma de QUANTIDADE (${br(y)} objetos) — não se usa para ano.`
+   :(y<2010
+    ?`De 2000 a 2009 dizemos “two thousand + número”. A forma “twenty oh ${say(y%100)}” existe, mas é rara.`
+    :`De 2010 em diante convivem duas formas: “${sayYear(y)}” (mais comum na fala) e “${say(y)}”. As duas estão certas.`);
+  add(4,String(y),sayYear(y),[sayYear(y),alt,digits(y)],
+   `${y} = ${sayYear(y)}. Regra geral: separe em dois pares — ${String(y).slice(0,2)} `+
+   `e ${String(y).slice(2)}. ${nota} Ler algarismo por algarismo `+
+   `(“${digits(y)}”) é sempre errado para anos.`,
+   sayYear(y),true);
+ });
+
+ /* 6 — data de nascimento */
+ S.dates.forEach(([m,d,y])=>{
+  const ok=`I was born on ${MONTHS[m]} ${ordinal(d)}, ${sayYear(y)}.`;
+  const trap=d<=12
+   ?`I was born on ${MONTHS[d-1]} ${ordinal(m+1)}, ${sayYear(y)}.`
+   :`I was born on ${MONTHS[m]} ${ordinal(d)}, ${sayYear(swapLast(y))}.`;
+  add(5,`${d} de ${MESES[m]} de ${y}\n(${String(d).padStart(2,"0")}/${String(m+1).padStart(2,"0")}/${y})`,
+   ok,
+   [ok,
+    `I was born on ${MONTHS[m]} ${say(d)}, ${sayYear(y)}.`,
+    trap],
+   `Três peças: (1) o MÊS vem antes do dia no inglês americano — ${MONTHS[m]}; `+
+   `(2) o dia é ORDINAL, ${d} → ${ordinal(d)}, nunca “${say(d)}”; `+
+   `(3) o ano em pares, ${sayYear(y)}. Repare que ${String(d).padStart(2,"0")}/`+
+   `${String(m+1).padStart(2,"0")} no Brasil vira ${String(m+1).padStart(2,"0")}/`+
+   `${String(d).padStart(2,"0")} nos EUA.`,
+   ok,true);
+ });
+ return q;
+}
+
+/* ---------- Estado ---------- */
+let names=[],points=[0,0,0,0],questions=[],position=0,solved=false;
+const TOTAL=24;
+
+/* ---------- Efeitos: fogos, flash, som ---------- */
+const cv=$("fx"),ctx=cv.getContext("2d");
+let parts=[],raf=null;
+function sizeCanvas(){cv.width=innerWidth;cv.height=innerHeight;}
+sizeCanvas();addEventListener("resize",sizeCanvas);
+function burst(x,y,color){
+ for(let i=0;i<70;i++){
+  const a=Math.random()*Math.PI*2,s=Math.random()*7+2;
+  parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,
+   color,size:Math.random()*3+1.5});
+ }
+ if(!raf)raf=requestAnimationFrame(loop);
+}
+function loop(){
+ ctx.clearRect(0,0,cv.width,cv.height);
+ parts=parts.filter(p=>p.life>0);
+ for(const p of parts){
+  p.x+=p.vx;p.y+=p.vy;p.vy+=.13;p.vx*=.99;p.life-=.012;
+  ctx.globalAlpha=Math.max(p.life,0);ctx.fillStyle=p.color;
+  ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill();
+ }
+ ctx.globalAlpha=1;
+ if(parts.length)raf=requestAnimationFrame(loop);
+ else{raf=null;ctx.clearRect(0,0,cv.width,cv.height);}
+}
+function fireworks(n){
+ if(reduced)return;
+ for(let i=0;i<n;i++)setTimeout(()=>burst(
+  innerWidth*(.15+Math.random()*.7),
+  innerHeight*(.15+Math.random()*.45),
+  COLOR[(Math.random()*COLOR.length)|0]),i*210);
+}
+function flash(){
+ if(reduced)return;
+ const f=$("flash");f.classList.remove("on");void f.offsetWidth;f.classList.add("on");
+}
+function shakeScreen(){
+ if(reduced)return;
+ const m=document.querySelector("main");
+ m.classList.remove("shakeScreen");void m.offsetWidth;m.classList.add("shakeScreen");
+}
+let ac=null,soundOn=true;
+function tone(freq,delay,dur,type){
+ const t=ac.currentTime+delay,o=ac.createOscillator(),g=ac.createGain();
+ o.type=type||"triangle";o.frequency.value=freq;
+ g.gain.setValueAtTime(.0001,t);
+ g.gain.exponentialRampToValueAtTime(.25,t+.02);
+ g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+dur+.05);
+}
+function audio(ok){
+ if(!soundOn)return;
+ try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+  if(ac.state==="suspended")ac.resume();
+  if(ok)[523,659,784,1047].forEach((f,i)=>tone(f,i*.08,.3));
+  else{tone(233,0,.16,"sawtooth");tone(175,.14,.24,"sawtooth");}
+ }catch(e){}
+}
+
+/* ---------- Render ---------- */
+function scoreboard(target,active){
+ target.replaceChildren();
+ names.forEach((name,i)=>{
+  const card=document.createElement("div");
+  card.className="player"+(i===active?" active":"");
+  card.style.setProperty("--color",COLOR[i]);
+  card.id="card"+i;
+  const icon=document.createElement("div");icon.textContent=ICON[i];
+  const t=document.createElement("strong");t.textContent=name;
+  const s=document.createElement("div");s.className="points";s.id="pts"+i;
+  s.textContent=points[i]+" / 6 ⭐";
+  card.append(icon,t,s);target.append(card);
+ });
+}
+function render(){
+ solved=false;
+ const q=questions[position],p=position%4;
+ scoreboard($("players"),p);
+ $("round").textContent=`Rodada ${q.round+1} de 6 • ${MISSIONS[q.round]}`;
+ $("progress").style.width=position/TOTAL*100+"%";
+ $("whose").textContent=`${ICON[p]} ${names[p]} • Desafio ${q.round+1} de 6`;
+ $("title").textContent=TITLES[q.round];
+ $("instruction").textContent=INSTRUCTIONS[q.round];
+ $("speak").textContent="Diga em inglês em voz alta. Depois a professora clica na sua resposta.";
+ const pr=$("prompt");
+ pr.className="prompt"+(q.prompt.length>12?" small-text":"");
+ pr.textContent=q.prompt;
+ $("feedback").hidden=true;$("feedback").replaceChildren();
+ $("next").hidden=true;
+ const box=$("options");
+ box.className="options"+(q.options.some(o=>o.length>14)?" stack":"");
+ box.replaceChildren();
+ q.options.forEach(opt=>{
+  const b=document.createElement("button");
+  b.textContent=opt;b.setAttribute("aria-label","Escolher "+opt);
+  b.onclick=()=>answer(opt,b);box.append(b);
+ });
+}
+function announce(){
+ const p=position%4,q=questions[position];
+ $("turnRound").textContent="Rodada "+(q.round+1)+" de 6 • "+MISSIONS[q.round];
+ $("turnIcon").textContent=ICON[p];
+ $("turnName").textContent=names[p];
+ $("turnName").style.setProperty("--turn-color",COLOR[p]);
+ $("turnMission").textContent="Sua missão: "+MISSIONS[q.round].toLowerCase()+".";
+ $("turnDialog").showModal();
+}
+const HINTS=["Olhe o final do numeral: 3 no fim é -teen, 0 no fim é -ty.",
+"Leia a dezena primeiro e só depois a unidade.",
+"Conte as casas: centena, dezena, unidade.",
+"Quantos milhares? E o que sobra depois deles?",
+"Divida o ano em dois pares de algarismos.",
+"Confira o dia: ele precisa ser ordinal."];
+
+function answer(opt,b){
+ if(solved)return;
+ const q=questions[position],p=position%4;
+ $("feedback").hidden=false;
+ if(opt!==q.answer){
+  b.disabled=true;b.classList.add("wrong");
+  shakeScreen();audio(false);
+  $("feedback").replaceChildren();
+  const t=document.createElement("p");
+  t.textContent="Boa tentativa! "+HINTS[q.round]+
+   " Peça ajuda e tente de novo — você não perde estrelas.";
+  $("feedback").append(t);
+  return;
+ }
+ solved=true;points[p]++;
+ b.classList.add("correct");
+ [...$("options").children].forEach(x=>x.disabled=true);
+ flash();fireworks(position===TOTAL-1?9:4);audio(true);
+ const pts=$("pts"+p);
+ pts.textContent=points[p]+" / 6 ⭐";pts.classList.add("pop");
+ const fl=document.createElement("span");
+ fl.className="float";fl.textContent="+1 ⭐";
+ $("card"+p).append(fl);setTimeout(()=>fl.remove(),1200);
+ $("feedback").replaceChildren();
+ const title=document.createElement("strong");
+ title.textContent=`⭐ Perfect, ${names[p]}! +1 estrela`;
+ const exp=document.createElement("p");exp.textContent=q.explanation;
+ const rep=document.createElement("div");rep.className="say";
+ rep.textContent="Everybody, repeat: “"+q.repeat+"”";
+ $("feedback").append(title,exp,rep);
+ $("progress").style.width=(position+1)/TOTAL*100+"%";
+ $("next").textContent=position===TOTAL-1?"Abrir o tesouro! 🎁"
+  :position%4===3?"Concluir rodada →":"Vez de "+names[(position+1)%4]+" →";
+ $("next").hidden=false;
+}
+function next(){
+ if(!solved)return;
+ position++;
+ if(position===TOTAL){
+  $("game").hidden=true;$("finish").hidden=false;
+  scoreboard($("finalPlayers"),-1);
+  fireworks(12);flash();audio(true);
+  return;
+ }
+ render();
+ if(position%4===0){
+  $("pauseText").textContent=`Todos completaram a rodada ${questions[position-1].round+1}: `+
+   MISSIONS[questions[position-1].round]+".";
+  $("pause").showModal();
+ }else announce();
+}
+
+/* ---------- Consulta ---------- */
+function dictionary(){
+ const body=$("dictBody");body.replaceChildren();
+ const sec=(titulo,build)=>{
+  const h=document.createElement("h3");h.textContent=titulo;
+  body.append(h);build();
+ };
+ const grid=items=>{
+  const g=document.createElement("div");g.className="words";
+  items.forEach(t=>{const d=document.createElement("div");d.textContent=t;g.append(d);});
+  body.append(g);
+ };
+ const rule=(t,html)=>{
+  const d=document.createElement("div");d.className="rule";
+  const b=document.createElement("b");b.textContent=t+" ";
+  d.append(b,document.createTextNode(html));body.append(d);
+ };
+ sec("0 – 20",()=>grid(Array.from({length:21},(_,i)=>i+" — "+ONES[i])));
+ sec("Dezenas",()=>grid(TENS.slice(2).map((w,i)=>((i+2)*10)+" — "+w)));
+ sec("Regras",()=>{
+  rule("Teen vs ty:","13 thir-TEEN / 30 THIR-ty. O teen tem a força no fim.");
+  rule("Dezena + unidade:","47 = forty-seven (sempre com hífen).");
+  rule("Centenas:","365 = three hundred sixty-five. Sem “and” (EUA).");
+  rule("Milhares:","3.480 = three thousand four hundred eighty.");
+  rule("Até 10.000:","9.999 = nine thousand nine hundred ninety-nine.");
+  rule("Anos:","1998 = nineteen ninety-eight • 2005 = two thousand five • 2014 = twenty fourteen • 1905 = nineteen oh five.");
+  rule("Dia do mês:","1st first, 2nd second, 3rd third, 5th fifth, 12th twelfth, 20th twentieth, 21st twenty-first, 30th thirtieth.");
+  rule("Data completa:","I was born on July fourth, two thousand nine.");
+ });
+ sec("Meses",()=>grid(MONTHS.map((m,i)=>m+" — "+MESES[i])));
+ $("dictionary").showModal();
+}
+
+/* ---------- Fluxo: cadastro → aula → jogo ---------- */
+function startGame(){
+ points=[0,0,0,0];position=0;
+ questions=build(generateSeries());
+ $("setup").hidden=true;$("lesson").hidden=true;$("finish").hidden=true;
+ $("game").hidden=false;
+ render();announce();
+}
+function goToLesson(){
+ $("setup").hidden=true;$("lesson").hidden=false;
+ lessonIndex=0;renderLesson();
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---------- Eventos ---------- */
+$("form").onsubmit=e=>{
+ e.preventDefault();
+ for(let i=0;i<4;i++){
+  const input=$("name"+i);
+  input.setCustomValidity(input.value.trim()?"":"Digite o nome do aluno.");
+  if(!input.reportValidity())return;
+ }
+ names=[0,1,2,3].map(i=>$("name"+i).value.trim());
+ goToLesson();
+};
+$("skipToGame").onclick=()=>{
+ for(let i=0;i<4;i++){
+  const input=$("name"+i);
+  input.setCustomValidity(input.value.trim()?"":"Digite o nome do aluno.");
+  if(!input.reportValidity())return;
+ }
+ names=[0,1,2,3].map(i=>$("name"+i).value.trim());
+ startGame();
+};
+[0,1,2,3].forEach(i=>$("name"+i).oninput=()=>$("name"+i).setCustomValidity(""));
+$("lessonPrev").onclick=()=>{
+ if(lessonIndex>0){lessonIndex--;renderLesson();}
+};
+$("lessonNext").onclick=()=>{
+ if(lessonIndex<LESSON.length-1){lessonIndex++;renderLesson();}
+ else startGame();
+};
+$("ready").onclick=()=>$("turnDialog").close();
+$("turnDialog").addEventListener("cancel",e=>e.preventDefault());
+$("pause").addEventListener("cancel",e=>e.preventDefault());
+$("continue").onclick=()=>{$("pause").close();announce();};
+$("next").onclick=next;
+$("help").onclick=dictionary;
+$("closeWords").onclick=()=>$("dictionary").close();
+$("restart").onclick=()=>{
+ $("finish").hidden=true;$("setup").hidden=false;
+ points=[0,0,0,0];position=0;solved=false;questions=[];
+ parts=[];
+};
+$("sound").onclick=()=>{
+ soundOn=!soundOn;
+ $("sound").textContent=soundOn?"🔊 Som":"🔇 Mudo";
+ $("sound").setAttribute("aria-pressed",String(soundOn));
+ if(soundOn)audio(true);
+};
+$("fullscreen").onclick=async()=>{
+ try{
+  if(document.fullscreenElement)await document.exitFullscreen();
+  else await document.documentElement.requestFullscreen();
+ }catch{$("fullscreen").textContent="Use a tela cheia do navegador";}
+};
+document.addEventListener("fullscreenchange",()=>{
+ $("fullscreen").textContent=document.fullscreenElement?"Sair da tela cheia":"Tela cheia";
+ sizeCanvas();
+});
+</script>
+</body>
+</html>
