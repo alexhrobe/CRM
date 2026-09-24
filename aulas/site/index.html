@@ -1,3 +1,5 @@
+<!doctype html>
+<html lang="pt-BR">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>The Confidence Trap Showdown</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -383,7 +385,7 @@ field('reflection','Look back at your hot takes from Round 1. What would you say
 `<section class="scorecard"><div class="eyebrow" style="color:var(--ink)">${all?'FINAL SCORE':'SCORE SO FAR'} · ${esc(state.answers.name||'Player 1')}</div><div class="metric" style="font-size:56px;margin-top:8px">${x}</div><div class="rank">${rank(x)}</div><p style="margin:0 auto">${nextRank(x)} Quiz: ${Object.values(state.quiz).filter(q=>q.correct).length}/8 · Idioms: ${state.match.length}/8 · Hot or Not: ${Object.values(state.hot).filter(h=>h.correct).length}/6</p>
 <div class="badges">${rounds.map((r,i)=>badgeHTML(r.badge,r.ic,state.done.includes(i),'Rodada '+(i+1))).join('')}${extraBadges().map(b=>badgeHTML(b[0],b[1],b[2],b[3])).join('')}</div>
 <div class="actions" style="justify-content:center"><button class="btn go" id="copy">Copy report for teacher</button><button class="btn" id="download">Download .txt</button><button class="btn red" id="reset">Start over</button></div><small style="color:var(--ink)">O relatório traz respostas, decisões, quiz, e-mail e reflexão. Nada é enviado automaticamente.</small></section>`}
-main.innerHTML=h;updateCount()}
+main.innerHTML=h;updateCount();const at=document.querySelector('.ticket.active');if(at&&innerWidth<=820)at.scrollIntoView({block:'nearest',inline:'center'})}
 
 function updateCount(){const e=$('wordCount');if(!e)return;const w=words();e.textContent=`${w} palavras · meta: 180–220 · ${w>=180&&w<=220?'Tamanho certo!':w<180?'Faltam '+(180-w):'Corte '+(w-220)}`}
 function validate(){const a=state.answers;switch(state.page){
@@ -439,3 +441,4 @@ Object.entries(labels).forEach(([k,l])=>L.push(l+':',a[k]||'—',''));return L.j
 function download(){const url=URL.createObjectURL(new Blob([report()],{type:'text/plain;charset=utf-8'})),x=document.createElement('a');x.href=url;x.download='Confidence_Trap_C1_Report.txt';document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 render();
 </script>
+</html>
